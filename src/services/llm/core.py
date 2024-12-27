@@ -1,9 +1,7 @@
-import asyncio
 import io
 import logging
-import mimetypes
-from datetime import datetime, timedelta, timezone
-from typing import Any, Dict, List, Optional, Union
+from datetime import datetime, timezone
+from typing import Any, Dict, List, Optional
 
 from PIL import Image
 from google.genai import types
@@ -11,10 +9,7 @@ from google import genai
 import aiohttp
 
 from src.services.base import BaseService
-from src.services.cache.manager import Manager as CacheManager
 from src.services.llm.memory.short_term import Message, ShortTermMemory
-from src.services.llm.provider import GoogleGeminiProvider
-from src.services.llm.tools.registry import registry as tool_registry
 from src.utils import logger
 from .personality import PersonalityManager
 
