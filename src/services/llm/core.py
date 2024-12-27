@@ -19,17 +19,18 @@ log = logger.setup_logger(__name__)
 class LLMService(BaseService):
     """Core LLM service that manages the provider, memory, and caching."""
 
-    def __init__(self, settings, personality_manager=None):
+    def __init__(self, settings, personality_config=None):
         """Initialize the LLM service.
 
         Args:
             settings: Application settings
-            personality_manager: Personality manager (optional)
+            personality_config: Personality configuration (optional)
         """
         super().__init__()
         # Initialize the client with just the API key string
         self.client = genai.Client(api_key=settings.ai.google_api_key)
-        self.personality = personality_manager or PersonalityManager()
+        # Initialize with specific personality config
+        self.personality = PersonalityManager(personality_config)
         # Remove model initialization and just store model name
         self.model_name = "gemini-2.0-flash-exp"
         self.chats = {}  # Store active chat sessions
@@ -67,28 +68,20 @@ class LLMService(BaseService):
         content: str,
         author_id: str,
         channel_id: str,
-        attachments: List[Dict[str, Any]] = None,
+        attachments: List[Dict] = None,
         mentions: List[Dict] = None,
-        user_info: Dict[str, str] = None,
-        bot_info: Dict[str, str] = None,
-        channel_info: Dict[str, str] = None,
+        reference: Dict = None,
+        user_info: Dict = None,
+        bot_info: Dict = None,
+        channel_info: Dict = None,
     ) -> Optional[str]:
         """Process a message with potential attachments."""
         try:
-            # Check if we need to populate context
-            if (
-                len(self.memory.get_channel_context(channel_id))
-                < self.memory.max_messages // 2
-            ):
-                # We'll need to pass this from events.py
-                if channel_info.get("discord_channel"):
-                    await self.memory.populate_context(channel_info["discord_channel"])
-
             # Store message in memory with timezone-aware datetime
             message = Message(
                 content=content,
                 author_id=author_id,
-                timestamp=datetime.now(timezone.utc),  # Make timestamp timezone-aware
+                timestamp=datetime.now(timezone.utc),
                 channel_id=channel_id,
                 attachments=attachments or [],
                 mentions=mentions or [],
@@ -153,15 +146,30 @@ class LLMService(BaseService):
         """Format message history into a string for context."""
         context = []
         for msg in messages:
-            author = "Bot" if msg.is_bot else "User"
-            # Format the content with proper mention handling
+            # Be more explicit about who is speaking
+            author = "Assistant (Eidos)" if msg.is_bot else "Human User"
             content = msg.content
+
             if msg.mentions:
                 for mention in msg.mentions:
                     if mention["type"] == "user":
-                        content = content.replace(
-                            f"<@{mention['id']}>", f"@{mention['name']}"
-                        )
+                        # If the mention is referring to the bot, check by ID
+                        if mention.get("id") == mention.get(
+                            "bot_id"
+                        ):  # bot_id should be passed in mentions
+                            display_name = "you"
+                            content = content.replace(f"<@{mention['id']}>", "you")
+                            content = content.replace(f"<@!{mention['id']}>", "you")
+                        else:
+                            display_name = mention.get("nickname") or mention.get(
+                                "name", "user"
+                            )
+                            content = content.replace(
+                                f"<@{mention['id']}>", f"@{display_name}"
+                            )
+                            content = content.replace(
+                                f"<@!{mention['id']}>", f"@{display_name}"
+                            )
                     elif mention["type"] == "role":
                         content = content.replace(
                             f"<@&{mention['id']}>", f"@{mention['name']}"

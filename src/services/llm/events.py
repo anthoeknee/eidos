@@ -1,8 +1,8 @@
-import logging
 import discord
 from discord.ext import commands
 from typing import List
 
+from src.services.llm.personality import PersonalityManager
 from src.services.manager import ServiceManager
 from src.utils import logger
 
@@ -12,9 +12,19 @@ log = logger.setup_logger("llm_events")
 class LLMEvents:
     """Handles LLM-related events and commands."""
 
-    def __init__(self, bot: commands.Bot, service_manager: ServiceManager):
+    def __init__(
+        self,
+        bot: commands.Bot,
+        service_manager: ServiceManager,
+        personality_config=None,
+    ):
         self.bot = bot
         self.services = service_manager
+
+        # Initialize LLM service with specific personality
+        if hasattr(self.services.llm, "personality"):
+            self.services.llm.personality = PersonalityManager(personality_config)
+
         self._register_commands()
         self._register_events()
 
@@ -35,6 +45,34 @@ class LLMEvents:
             except Exception as e:
                 log.error(f"Error in ask command: {e}")
                 await ctx.send("Sorry, I encountered an error processing your request.")
+
+        @self.bot.command(name="set_personality")
+        async def set_personality(ctx, personality_name: str):
+            """Switch the bot's personality."""
+            try:
+                # Import personalities dynamically
+                from src.services.llm.personality_configs import EIDOS_PERSONALITY
+
+                personalities = {
+                    "eidos": EIDOS_PERSONALITY,
+                }
+
+                if personality_name.lower() not in personalities:
+                    await ctx.send(
+                        f"Available personalities: {', '.join(personalities.keys())}"
+                    )
+                    return
+
+                # Update the personality
+                self.services.llm.personality = PersonalityManager(
+                    personalities[personality_name.lower()]
+                )
+
+                await ctx.send(f"Switched to {personality_name} personality!")
+
+            except Exception as e:
+                log.error(f"Error switching personality: {e}")
+                await ctx.send("Failed to switch personality.")
 
     def _register_events(self):
         @self.bot.event
@@ -81,6 +119,7 @@ class LLMEvents:
                                 "id": str(user.id),
                                 "name": user.display_name,
                                 "username": user.name,
+                                "bot_id": str(self.bot.user.id),
                             }
                         )
 
@@ -120,11 +159,23 @@ class LLMEvents:
                         ref_msg = message.reference.resolved
                         reference = {
                             "content": ref_msg.content,
-                            "author": ref_msg.author.name,
+                            "author": {
+                                "name": ref_msg.author.display_name,
+                                "username": ref_msg.author.name,
+                                "id": str(ref_msg.author.id),
+                            },
                             "attachments": [
-                                {"url": att.url, "filename": att.filename}
+                                {
+                                    "url": att.url,
+                                    "filename": att.filename,
+                                    "content_type": att.content_type
+                                    if hasattr(att, "content_type")
+                                    else None,
+                                }
                                 for att in ref_msg.attachments
                             ],
+                            "id": str(ref_msg.id),
+                            "timestamp": ref_msg.created_at.isoformat(),
                         }
 
                     channel_info = {
@@ -145,6 +196,7 @@ class LLMEvents:
                         channel_id=str(message.channel.id),
                         attachments=attachments,
                         mentions=mentions,
+                        reference=reference,
                         user_info={
                             "name": message.author.display_name,
                             "username": message.author.name,

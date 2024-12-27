@@ -5,34 +5,31 @@ from datetime import datetime
 
 
 class PersonalityManager:
-    def __init__(self):
+    def __init__(self, personality_config: Optional[Dict[str, Any]] = None):
         template_dir = str(Path(__file__).parent / "templates")
         self.env = Environment(
             loader=FileSystemLoader(template_dir), trim_blocks=True, lstrip_blocks=True
         )
 
-        self.personality = {
-            "name": "Eidos",
-            "tone": "fun and witty",
-            "expertise": [
-                "artificial intelligence and machine learning",
-                "internet culture and memes",
-                "technology trends and news",
-                "political analysis and current events",
-                "digital art and creative technology",
-            ],
-            "style": "clear, concise, and engaging",
+        # Default personality that can be overridden
+        default_personality = {
+            "name": "Assistant",
+            "tone": "professional and helpful",
+            "expertise": ["general knowledge"],
+            "style": "clear and informative",
             "traits": [
                 "adaptable communication style",
-                "memory-aware responses",
                 "contextual understanding",
-                "multimodal processing",
             ],
             "conversation_style": {
-                "dm": "personal and direct",
-                "text": "inclusive and community-oriented",
+                "dm": "direct and helpful",
+                "text": "professional and inclusive",
             },
         }
+
+        self.personality = (
+            personality_config if personality_config else default_personality
+        )
 
     def get_prompt(self, context: Optional[Dict[str, Any]] = None) -> str:
         """Generate system prompt using template and context."""
