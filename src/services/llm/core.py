@@ -117,6 +117,12 @@ class LLMService(BaseService):
                 }
             )
 
+            if not system_prompt:
+                return (
+                    "I am not configured with a personality. Please set one using the `set_personality` command.",
+                    [],
+                )
+
             # Combine context, system prompt and current message
             full_prompt = f"{system_prompt}\n\nRecent conversation:\n{context_text}\n\nCurrent message: {content}"
 
