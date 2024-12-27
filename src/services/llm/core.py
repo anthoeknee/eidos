@@ -144,7 +144,7 @@ class LLMService(BaseService):
             logging.error(f"Error in process_message: {str(e)}", exc_info=True)
             return "I encountered an error processing your message.", []
 
-    async def _generate_with_tools(self, prompt: str) -> str:
+    async def _generate_with_tools(self, prompt: str) -> tuple[str, list]:
         """Generate content using tools if needed."""
         tools = self.tool_registry.get_all_tool_dicts()
         tool_list = [types.Tool(function_declarations=tools)]
@@ -168,15 +168,14 @@ class LLMService(BaseService):
             part = response.candidates[0].content.parts[0]
             if hasattr(part, "function_call") and part.function_call:
                 # Handle function call response
-                result = await self._handle_function_call(part.function_call)
-                return result
+                return await self._handle_function_call(part.function_call)
             elif hasattr(part, "text"):
                 # Handle text response
-                return part.text
+                return part.text, []
             else:
-                return "I couldn't process that response properly."
+                return "I couldn't process that response properly.", []
         else:
-            return "No response from the model."
+            return "No response from the model.", []
 
     async def _handle_function_call(
         self, function_call: types.FunctionCall
@@ -273,7 +272,7 @@ class LLMService(BaseService):
 
     async def _process_multimodal(
         self, prompt: str, attachments: List[Dict[str, Any]]
-    ) -> str:
+    ) -> tuple[str, list]:
         """Process a message with attachments."""
         try:
             contents = [prompt]
@@ -295,11 +294,11 @@ class LLMService(BaseService):
                 contents=contents,
                 config=types.GenerateContentConfig(temperature=0.7),
             )
-            return response.text
+            return response.text, []
 
         except Exception as e:
             logging.error(f"Error processing multimodal content: {e}")
-            return "I encountered an error processing the attachments."
+            return "I encountered an error processing the attachments.", []
 
     def end_chat(self, channel_id: str):
         """End a chat session for a channel."""

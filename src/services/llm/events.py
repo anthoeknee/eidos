@@ -1,8 +1,6 @@
 import discord
 from discord.ext import commands
 from typing import List
-import io
-import base64
 
 from src.services.llm.personality import PersonalityManager
 from src.services.manager import ServiceManager
@@ -216,24 +214,34 @@ class LLMEvents:
                         channel_info=channel_info,
                     )
 
-                    # Handle response that includes files
-                    if isinstance(response, tuple) and len(response) == 2:
-                        message_content, files = response
-                        if files:
-                            await message.reply(content=message_content, files=files)
-                        else:
-                            # Split and send text response as before
-                            chunks = self.split_message(message_content)
-                            for chunk in chunks:
-                                await message.reply(chunk)
-                    else:
-                        # Split and send text response as before
-                        chunks = self.split_message(response)
-                        for chunk in chunks:
-                            await message.reply(chunk)
+                    await self._handle_response(message, response)
 
                 except Exception as e:
                     log.error(f"Error processing message: {str(e)}", exc_info=True)
+
+    async def _handle_response(
+        self, message: discord.Message, response: tuple[str, list] | str
+    ):
+        """Handles the response from the LLM service, including text and files."""
+        if isinstance(response, tuple) and len(response) == 2:
+            message_content, files = response
+            if files:
+                await message.reply(content=message_content, files=files)
+            else:
+                # Split and send text response as before
+                chunks = self.split_message(message_content)
+                for chunk in chunks:
+                    await message.reply(chunk)
+        elif isinstance(response, str):
+            # Split and send text response as before
+            chunks = self.split_message(response)
+            for chunk in chunks:
+                await message.reply(chunk)
+        else:
+            log.error(f"Unexpected response type: {type(response)}")
+            await message.reply(
+                "Sorry, I encountered an error processing your request."
+            )
 
     def split_message(self, content: str, max_length: int = 2000) -> List[str]:
         """Split a message into chunks that fit Discord's character limit.
@@ -257,60 +265,3 @@ class LLMEvents:
             content = content[split_index:].lstrip()
         chunks.append(content)
         return chunks
-
-    async def _handle_function_call(self, function_call: dict) -> tuple[str, list]:
-        """Handle a function call from the model."""
-        try:
-            if not hasattr(self, "tool_registry"):
-                log.error("Tool registry not initialized")
-                return (
-                    "Sorry, I encountered an error with the image generation tool.",
-                    [],
-                )
-
-            log.info(f"Handling function call: {function_call}")
-
-            tool = self.tool_registry.get_tool(function_call["name"])
-            if not tool:
-                log.error(f"Tool not found: {function_call['name']}")
-                return (
-                    f"Sorry, I couldn't find the tool: {function_call['name']}",
-                    [],
-                )
-
-            args = function_call["args"]
-            log.info(f"Executing tool with args: {args}")
-
-            result = await tool.execute(args)
-            log.info(f"Tool execution result: {result}")
-
-            # Handle image generation results
-            if function_call["name"] == "generate_image":
-                if isinstance(result, list):
-                    if not result:
-                        return "Sorry, I couldn't generate any images.", []
-
-                    files = []
-                    for i, base64_image in enumerate(result):
-                        image_bytes = base64.b64decode(base64_image)
-                        file = discord.File(
-                            io.BytesIO(image_bytes),
-                            filename=f"generated_image_{i+1}.png",
-                        )
-                        files.append(file)
-
-                    return (
-                        "Here are the generated images based on your prompt!",
-                        files,
-                    )
-                else:
-                    return result, []
-
-            return (
-                f"Error: Unexpected result format from {function_call['name']}",
-                [],
-            )
-
-        except Exception as e:
-            log.error(f"Error handling function call: {e}", exc_info=True)
-            return f"Sorry, I encountered an error: {str(e)}", []
