@@ -15,7 +15,7 @@ async def main():
         bot = EidosBot(settings)
         async with bot:
             log.info("Starting Eidos Bot...")
-            await bot.start(settings.discord.token)
+            await bot.start(settings.discord_token)
 
     except Exception as e:
         log.error(f"Failed to start bot: {e}")

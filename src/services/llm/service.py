@@ -52,11 +52,14 @@ class LLMService:
             # Store updated history
             self.chats[channel_id] = history[-10:]  # Keep last 10 messages
 
-            return response
+            if hasattr(response, "function_call") and response.function_call:
+                return await self.events._handle_function_call(response.function_call)
+
+            return response.text
 
         except Exception as e:
-            log.error(f"Error processing message: {str(e)}", exc_info=True)
-            return "I encountered an error processing your message."
+            log.error(f"Error processing message: {e}", exc_info=True)
+            return "Sorry, I encountered an error processing your request."
 
     async def cleanup(self) -> None:
         """Cleanup the service."""

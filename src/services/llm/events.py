@@ -1,6 +1,8 @@
 import discord
 from discord.ext import commands
 from typing import List
+import io
+import base64
 
 from src.services.llm.personality import PersonalityManager
 from src.services.manager import ServiceManager
@@ -20,6 +22,7 @@ class LLMEvents:
     ):
         self.bot = bot
         self.services = service_manager
+        self.tool_registry = self.services.llm.tool_registry
 
         # Initialize LLM service with specific personality
         if hasattr(self.services.llm, "personality"):
@@ -213,10 +216,21 @@ class LLMEvents:
                         channel_info=channel_info,
                     )
 
-                    # Split and send response
-                    chunks = self.split_message(response)
-                    for chunk in chunks:
-                        await message.reply(chunk)
+                    # Handle response that includes files
+                    if isinstance(response, tuple) and len(response) == 2:
+                        message_content, files = response
+                        if files:
+                            await message.reply(content=message_content, files=files)
+                        else:
+                            # Split and send text response as before
+                            chunks = self.split_message(message_content)
+                            for chunk in chunks:
+                                await message.reply(chunk)
+                    else:
+                        # Split and send text response as before
+                        chunks = self.split_message(response)
+                        for chunk in chunks:
+                            await message.reply(chunk)
 
                 except Exception as e:
                     log.error(f"Error processing message: {str(e)}", exc_info=True)
@@ -231,45 +245,72 @@ class LLMEvents:
         Returns:
             List of message chunks
         """
-        # If content is short enough, return as single message
         if len(content) <= max_length:
             return [content]
 
         chunks = []
-        current_chunk = ""
-
-        # Split on natural boundaries (paragraphs, sentences, then words)
-        paragraphs = content.split("\n\n")
-
-        for paragraph in paragraphs:
-            # If paragraph alone exceeds limit, split into sentences
-            if len(paragraph) > max_length:
-                sentences = paragraph.split(". ")
-                for sentence in sentences:
-                    # If sentence alone exceeds limit, split on words
-                    if len(sentence) > max_length:
-                        words = sentence.split(" ")
-                        for word in words:
-                            if len(current_chunk) + len(word) + 1 > max_length:
-                                chunks.append(current_chunk.strip())
-                                current_chunk = word + " "
-                            else:
-                                current_chunk += word + " "
-                    else:
-                        if len(current_chunk) + len(sentence) + 2 > max_length:
-                            chunks.append(current_chunk.strip())
-                            current_chunk = sentence + ". "
-                        else:
-                            current_chunk += sentence + ". "
-            else:
-                if len(current_chunk) + len(paragraph) + 2 > max_length:
-                    chunks.append(current_chunk.strip())
-                    current_chunk = paragraph + "\n\n"
-                else:
-                    current_chunk += paragraph + "\n\n"
-
-        # Add any remaining content
-        if current_chunk:
-            chunks.append(current_chunk.strip())
-
+        while len(content) > max_length:
+            split_index = content.rfind(" ", 0, max_length)
+            if split_index == -1:
+                split_index = max_length
+            chunks.append(content[:split_index])
+            content = content[split_index:].lstrip()
+        chunks.append(content)
         return chunks
+
+    async def _handle_function_call(self, function_call: dict) -> tuple[str, list]:
+        """Handle a function call from the model."""
+        try:
+            if not hasattr(self, "tool_registry"):
+                log.error("Tool registry not initialized")
+                return (
+                    "Sorry, I encountered an error with the image generation tool.",
+                    [],
+                )
+
+            log.info(f"Handling function call: {function_call}")
+
+            tool = self.tool_registry.get_tool(function_call["name"])
+            if not tool:
+                log.error(f"Tool not found: {function_call['name']}")
+                return (
+                    f"Sorry, I couldn't find the tool: {function_call['name']}",
+                    [],
+                )
+
+            args = function_call["args"]
+            log.info(f"Executing tool with args: {args}")
+
+            result = await tool.execute(args)
+            log.info(f"Tool execution result: {result}")
+
+            # Handle image generation results
+            if function_call["name"] == "generate_image":
+                if isinstance(result, list):
+                    if not result:
+                        return "Sorry, I couldn't generate any images.", []
+
+                    files = []
+                    for i, base64_image in enumerate(result):
+                        image_bytes = base64.b64decode(base64_image)
+                        file = discord.File(
+                            io.BytesIO(image_bytes),
+                            filename=f"generated_image_{i+1}.png",
+                        )
+                        files.append(file)
+
+                    return (
+                        "Here are the generated images based on your prompt!",
+                        files,
+                    )
+                else:
+                    return result, []
+
+            return (
+                f"Error: Unexpected result format from {function_call['name']}",
+                [],
+            )
+
+        except Exception as e:
+            log.error(f"Error handling function call: {e}", exc_info=True)
+            return f"Sorry, I encountered an error: {str(e)}", []

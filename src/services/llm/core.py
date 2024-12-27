@@ -7,9 +7,12 @@ from PIL import Image
 from google.genai import types
 from google import genai
 import aiohttp
+import base64
+import discord
 
 from src.services.base import BaseService
 from src.services.llm.memory.short_term import Message, ShortTermMemory
+from src.services.llm.tools.registry import ToolRegistry
 from src.utils import logger
 from .personality import PersonalityManager
 
@@ -28,7 +31,7 @@ class LLMService(BaseService):
         """
         super().__init__()
         # Initialize the client with just the API key string
-        self.client = genai.Client(api_key=settings.ai.google_api_key)
+        self.client = genai.Client(api_key=settings.google_api_key)
         # Initialize with specific personality config
         self.personality = PersonalityManager(personality_config)
         # Remove model initialization and just store model name
@@ -36,10 +39,21 @@ class LLMService(BaseService):
         self.chats = {}  # Store active chat sessions
         # Add short-term memory
         self.memory = ShortTermMemory(max_messages=35, ttl_minutes=45)
+        # Initialize tool registry
+        self.tool_registry = ToolRegistry()
+        self._register_tools()
 
     async def initialize(self) -> None:
         """Initialize the LLM service."""
         logging.info("Initializing LLM service with Gemini")
+
+    def _register_tools(self):
+        """Register available tools."""
+        from src.services.llm.tools.example_tool import ExampleTool
+        from src.services.llm.tools.image_generation_tool import ImageGenerationTool
+
+        self.tool_registry.register(ExampleTool)
+        self.tool_registry.register(ImageGenerationTool)
 
     def _get_or_create_chat(self, channel_id: str, system_prompt: str = None) -> Any:
         """Get existing chat or create new one for the channel."""
@@ -74,7 +88,7 @@ class LLMService(BaseService):
         user_info: Dict = None,
         bot_info: Dict = None,
         channel_info: Dict = None,
-    ) -> Optional[str]:
+    ) -> Optional[tuple[str, list]]:
         """Process a message with potential attachments."""
         try:
             # Store message in memory with timezone-aware datetime
@@ -111,23 +125,11 @@ class LLMService(BaseService):
                 return await self._process_multimodal(full_prompt, attachments)
 
             # Text-only response
-            response = await self.client.aio.models.generate_content(
-                model=self.model_name,
-                contents=full_prompt,
-                config=types.GenerateContentConfig(
-                    temperature=0.7,
-                    safety_settings=[
-                        types.SafetySetting(
-                            category="HARM_CATEGORY_DANGEROUS_CONTENT",
-                            threshold="BLOCK_ONLY_HIGH",
-                        )
-                    ],
-                ),
-            )
+            response, files = await self._generate_with_tools(full_prompt)
 
             # Store bot's response in memory with timezone-aware datetime
             bot_message = Message(
-                content=response.text,
+                content=response,
                 author_id=bot_info.get("username", "bot"),
                 timestamp=datetime.now(timezone.utc),  # Make timestamp timezone-aware
                 channel_id=channel_id,
@@ -136,11 +138,93 @@ class LLMService(BaseService):
             )
             self.memory.add_message(bot_message)
 
-            return response.text
+            return response, files
 
         except Exception as e:
             logging.error(f"Error in process_message: {str(e)}", exc_info=True)
-            return "I encountered an error processing your message."
+            return "I encountered an error processing your message.", []
+
+    async def _generate_with_tools(self, prompt: str) -> str:
+        """Generate content using tools if needed."""
+        tools = self.tool_registry.get_all_tool_dicts()
+        tool_list = [types.Tool(function_declarations=tools)]
+
+        response = await self.client.aio.models.generate_content(
+            model=self.model_name,
+            contents=prompt,
+            config=types.GenerateContentConfig(
+                temperature=0.7,
+                safety_settings=[
+                    types.SafetySetting(
+                        category="HARM_CATEGORY_DANGEROUS_CONTENT",
+                        threshold="BLOCK_ONLY_HIGH",
+                    )
+                ],
+                tools=tool_list,
+            ),
+        )
+
+        if response.candidates and response.candidates[0].content.parts:
+            part = response.candidates[0].content.parts[0]
+            if hasattr(part, "function_call") and part.function_call:
+                # Handle function call response
+                result = await self._handle_function_call(part.function_call)
+                return result
+            elif hasattr(part, "text"):
+                # Handle text response
+                return part.text
+            else:
+                return "I couldn't process that response properly."
+        else:
+            return "No response from the model."
+
+    async def _handle_function_call(
+        self, function_call: types.FunctionCall
+    ) -> tuple[str, list]:
+        """Handle a function call from the model."""
+        try:
+            tool = self.tool_registry.get_tool(function_call.name)
+            args = function_call.args
+            result = await tool.execute(args)
+
+            # Directly return the result if it's an image
+            if function_call.name == "generate_image":
+                if isinstance(result, list):
+                    if not result:
+                        return "Sorry, I couldn't generate any images.", []
+
+                    files = []
+                    image_parts = []
+                    for i, base64_image in enumerate(result):
+                        image_bytes = base64.b64decode(base64_image)
+                        image = Image.open(io.BytesIO(image_bytes))
+                        image_parts.append(image)
+                        file = discord.File(
+                            io.BytesIO(image_bytes),
+                            filename=f"generated_image_{i+1}.png",
+                        )
+                        files.append(file)
+                    # Generate a custom message for image generation
+                    response = await self.client.aio.models.generate_content(
+                        model=self.model_name,
+                        contents="Please generate a short, creative message to accompany the images I generated.",
+                        config=types.GenerateContentConfig(temperature=0.7),
+                    )
+                    return response.text, files
+                else:
+                    return result, []
+
+            # Generate a new response that includes the tool result
+            response = await self.client.aio.models.generate_content(
+                model=self.model_name,
+                contents=f"You used the {function_call.name} tool which returned: {result}\n\nPlease generate a natural response that incorporates this result.",
+                config=types.GenerateContentConfig(temperature=0.7),
+            )
+
+            return response.text, []
+        except Exception as e:
+            log.error(f"Error handling function call: {e}", exc_info=True)
+            return f"Error executing tool: {e}", []
 
     def _format_context(self, messages: List[Message]) -> str:
         """Format message history into a string for context."""

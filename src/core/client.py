@@ -23,7 +23,7 @@ class EidosBot(commands.Bot):
         intents.messages = True
 
         super().__init__(
-            command_prefix=settings.discord.command_prefix,
+            command_prefix=settings.discord_command_prefix,
             intents=intents,
             help_command=None,  # We'll implement our own help command
         )
