@@ -13,38 +13,30 @@ logger = Logger(name="Main", level="INFO")
 async def main():
     """Main entry point for the bot."""
     try:
-        logger.debug("Starting main function")
+        logger = Logger(name="Bot", level="INFO")
+        logger.info("Initializing bot...")
 
-        # Initialize storage services with more detailed logging
-        logger.info("Initializing storage...")
+        # Initialize storage services
         try:
-            async with asyncio.timeout(10):  # 10 second timeout
+            async with asyncio.timeout(10):
                 await init_storage()
         except asyncio.TimeoutError:
-            logger.error("Storage initialization timed out after 10 seconds")
+            logger.error("Storage initialization timed out")
             raise
         except Exception as e:
-            logger.error(f"Fatal error: {e}")
-            logger.exception(e)
+            logger.error(f"Storage initialization failed: {e}")
             raise
 
         # Create and run bot
-        logger.info("Creating bot instance...")
         bot = NexusBot()
-
-        # Register storage services with the bot's service manager
         bot.service_manager.register("valkey", ValkeyService)
         bot.service_manager.register("event_bus", EventBusService)
 
-        logger.info("Bot instance created, connecting to Discord...")
-
         async with bot:
-            logger.info("Starting bot with token...")
             await bot.start(settings.discord_token)
 
     except Exception as e:
         logger.error(f"Fatal error: {e}")
-        logger.exception(e)
         raise
 
 

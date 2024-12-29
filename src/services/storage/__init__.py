@@ -3,6 +3,7 @@ from typing import Dict, Optional, Type
 from src.services.storage.base import BaseStorageService
 from src.services.storage.valkey import ValkeyService
 from src.services.storage.eventbus import EventBusService
+from src.utils.logger import Logger
 
 
 class StorageType(Enum):
@@ -60,17 +61,12 @@ async def init_storage(**kwargs) -> None:
     """Initialize all storage services."""
     global _valkey, _event_bus
 
-    from src.utils.logger import Logger
+    logger = Logger(name="Storage", level="INFO")
 
-    logger = Logger(name="Storage", level="DEBUG")
-
-    logger.debug("Initializing Valkey storage...")
     _valkey = await StorageFactory.get_storage(StorageType.VALKEY, **kwargs)
-    logger.debug("Valkey storage initialized")
-
-    logger.debug("Initializing Event Bus storage...")
     _event_bus = await StorageFactory.get_storage(StorageType.EVENT_BUS, **kwargs)
-    logger.debug("Event Bus storage initialized")
+
+    logger.info("Storage services initialized")
 
 
 async def shutdown_storage() -> None:

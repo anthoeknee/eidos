@@ -5,6 +5,8 @@ from src.core.config import settings
 from src.services.storage.base import BaseStorageService
 import asyncio
 
+from src.utils.logger import Logger
+
 
 class ValkeyService(BaseStorageService):
     """Valkey storage service implementation using Redis protocol compatibility.
@@ -20,20 +22,12 @@ class ValkeyService(BaseStorageService):
 
     async def connect(self) -> None:
         """Connect to Valkey server using Redis protocol."""
-        from src.utils.logger import Logger
-
         logger = Logger(name="Valkey", level="INFO")
-
         max_retries = 3
         retry_delay = 1
 
         for attempt in range(max_retries):
             try:
-                logger.debug(
-                    f"Connection attempt {attempt + 1} to Valkey at {settings.valkey_url}"
-                )
-
-                # Create Redis client
                 self._client = redis.Redis.from_url(
                     settings.valkey_url,
                     socket_timeout=5,
@@ -43,34 +37,23 @@ class ValkeyService(BaseStorageService):
                     health_check_interval=30,
                 )
 
-                # Test connection with explicit timeout
-                logger.debug("Testing Valkey connection...")
-                try:
-                    async with asyncio.timeout(5):
-                        ping_result = await self._client.ping()
-                        logger.debug(f"Ping result: {ping_result}")
-                        if not ping_result:
-                            raise ConnectionError("Valkey ping returned False")
-                except asyncio.TimeoutError:
-                    logger.error(f"Ping timeout on attempt {attempt + 1}")
-                    raise
+                # Test connection
+                async with asyncio.timeout(5):
+                    if not await self._client.ping():
+                        raise ConnectionError("Connection test failed")
 
-                # Initialize pubsub if ping successful
                 self._pubsub = self._client.pubsub()
-                logger.info("Successfully connected to Valkey")
                 return
 
             except (ConnectionError, asyncio.TimeoutError) as e:
-                logger.error(f"Connection attempt {attempt + 1} failed: {str(e)}")
                 if attempt < max_retries - 1:
-                    logger.debug(f"Retrying in {retry_delay} seconds...")
                     await asyncio.sleep(retry_delay)
-                    retry_delay *= 2  # Exponential backoff
+                    retry_delay *= 2
                 else:
-                    logger.error("All connection attempts failed")
+                    logger.error("Failed to connect to Valkey")
                     raise
             except Exception as e:
-                logger.error(f"Unexpected error: {str(e)}")
+                logger.error(f"Unexpected error connecting to Valkey: {str(e)}")
                 raise
 
     async def disconnect(self) -> None:
