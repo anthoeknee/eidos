@@ -30,7 +30,7 @@ class Settings(BaseSettings):
     database_pool_timeout: int = 30
 
     # Redis Configuration
-    valkey_url: str = "redis://192.168.0.223:6379"
+    valkey_url: str = "valkey://192.168.0.223:6379"
     valkey_password: str
     valkey_conversation_ttl: int = 5400
 

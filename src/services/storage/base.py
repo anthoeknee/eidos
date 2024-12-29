@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Any, Dict, Optional, List, Set
+from typing import Any, Dict, Optional, List, Set, Tuple
 
 
 class BaseStorageService(ABC):
@@ -176,5 +176,71 @@ class BaseStorageService(ABC):
 
         Returns:
             bool: True if the service is healthy, False otherwise.
+        """
+        pass
+
+    # Vector Operations
+    @abstractmethod
+    async def create_vector_index(
+        self, index_name: str, vector_dimensions: int
+    ) -> None:
+        """
+        Create a vector index.
+
+        Args:
+            index_name (str): The name of the index.
+            vector_dimensions (int): The number of dimensions in the vector.
+        """
+        pass
+
+    @abstractmethod
+    async def add_vector(
+        self, index_name: str, key: str, vector: List[float], content: str, tag: str
+    ) -> None:
+        """
+        Add a vector to the index.
+
+        Args:
+            index_name (str): The name of the index.
+            key (str): The key to store the vector under.
+            vector (List[float]): The vector to add.
+            content (str): The content associated with the vector.
+            tag (str): The tag associated with the vector.
+        """
+        pass
+
+    @abstractmethod
+    async def vector_knn_search(
+        self, index_name: str, query_vector: List[float], top_k: int, tag: str
+    ) -> List[Tuple[str, str, float]]:
+        """
+        Perform a KNN search on the vector index.
+
+        Args:
+            index_name (str): The name of the index.
+            query_vector (List[float]): The query vector.
+            top_k (int): The number of results to return.
+            tag (str): The tag to filter by.
+
+        Returns:
+            List[Tuple[str, str, float]]: A list of tuples containing the key, content, and score of the results.
+        """
+        pass
+
+    @abstractmethod
+    async def vector_range_search(
+        self, index_name: str, query_vector: List[float], radius: float, tag: str
+    ) -> List[Tuple[str, str, float]]:
+        """
+        Perform a range search on the vector index.
+
+        Args:
+            index_name (str): The name of the index.
+            query_vector (List[float]): The query vector.
+            radius (float): The radius to search within.
+            tag (str): The tag to filter by.
+
+        Returns:
+            List[Tuple[str, str, float]]: A list of tuples containing the key, content, and score of the results.
         """
         pass
