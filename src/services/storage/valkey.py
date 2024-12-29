@@ -74,7 +74,7 @@ class ValkeyService(BaseStorageService):
         try:
             return json.loads(value)
         except json.JSONDecodeError:
-            return value.decode("utf-8")
+            return value.decode("utf-8") if isinstance(value, bytes) else value
 
     # Core Key-Value Operations
     async def set(self, key: str, value: Any, ttl: Optional[int] = None) -> None:

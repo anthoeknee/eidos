@@ -81,6 +81,21 @@ class ConversationHistory:
         """
         key = self._get_key(channel_id)
 
+        # Handle string content and remove any extra quotes
+        if isinstance(content, str):
+            try:
+                content = json.loads(content)
+            except json.JSONDecodeError:
+                # Remove surrounding quotes if they exist
+                content = [content.strip("\"[]'")]  # Treat as single text message
+        elif (
+            isinstance(content, list)
+            and len(content) > 0
+            and isinstance(content[0], str)
+        ):
+            # Clean up any quotes in list items
+            content = [item.strip("\"[]'") for item in content]
+
         # Convert content to MultimodalContent objects
         multimodal_content = []
         for c, c_type in zip(content, content_types):
@@ -102,10 +117,30 @@ class ConversationHistory:
 
         try:
             messages = await self.get_history(channel_id)
-            messages.append(message.to_dict())
-            if len(messages) > self.max_messages:
-                messages = messages[-self.max_messages :]
-            await self._valkey.set(key, json.dumps(messages), ttl=self.ttl)
+
+            # Ensure messages is a list
+            if not isinstance(messages, list):
+                messages = []
+
+            # Convert message to dict before checking for duplicates
+            message_dict = message.to_dict()
+
+            if not any(
+                m["user_id"] == message_dict["user_id"]
+                and m["timestamp"] == message_dict["timestamp"]
+                and m["channel_id"] == message_dict["channel_id"]
+                and m["content"] == message_dict["content"]
+                for m in messages
+            ):
+                messages.append(message_dict)
+                if len(messages) > self.max_messages:
+                    messages = messages[-self.max_messages :]
+                # Ensure we're storing a JSON string
+                await self._valkey.set(key, json.dumps(messages), ttl=self.ttl)
+            else:
+                self.logger.debug(
+                    f"Duplicate message detected, not adding to history: {message_dict}"
+                )
 
         except Exception as e:
             self.logger.error(f"Error adding multimodal message to history: {e}")
@@ -118,6 +153,10 @@ class ConversationHistory:
         try:
             data = await self._valkey.get(key)
             if data:
+                # Check if data is already a list (already deserialized)
+                if isinstance(data, list):
+                    return data
+                # Otherwise parse the JSON string
                 return json.loads(data)
             return []
 
