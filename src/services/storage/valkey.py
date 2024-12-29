@@ -22,7 +22,7 @@ class ValkeyService(BaseStorageService):
         """Connect to Valkey server using Redis protocol."""
         from src.utils.logger import Logger
 
-        logger = Logger(name="Valkey", level="DEBUG")
+        logger = Logger(name="Valkey", level="INFO")
 
         max_retries = 3
         retry_delay = 1
@@ -30,12 +30,12 @@ class ValkeyService(BaseStorageService):
         for attempt in range(max_retries):
             try:
                 logger.debug(
-                    f"Connection attempt {attempt + 1} to Valkey at {settings.redis_url}"
+                    f"Connection attempt {attempt + 1} to Valkey at {settings.valkey_url}"
                 )
 
                 # Create Redis client
                 self._client = redis.Redis.from_url(
-                    settings.redis_url,
+                    settings.valkey_url,
                     socket_timeout=5,
                     socket_connect_timeout=5,
                     retry_on_timeout=True,
@@ -171,3 +171,12 @@ class ValkeyService(BaseStorageService):
             return True
         except Exception:
             return False
+
+    # Add these methods to implement BaseService
+    async def start(self) -> None:
+        """Start the service by connecting to Valkey."""
+        await self.connect()
+
+    async def stop(self) -> None:
+        """Stop the service by disconnecting from Valkey."""
+        await self.disconnect()

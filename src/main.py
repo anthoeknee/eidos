@@ -7,7 +7,7 @@ from src.services.storage.valkey import ValkeyService
 from src.services.storage.eventbus import EventBusService
 
 # Create logger with debug level temporarily to see all messages
-logger = Logger(name="Main", level="DEBUG")
+logger = Logger(name="Main", level="INFO")
 
 
 async def main():

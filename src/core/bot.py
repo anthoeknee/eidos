@@ -3,6 +3,7 @@ from discord.ext import commands
 from src.core.config import settings
 from src.services.manager import ServiceManager
 from src.utils.logger import Logger
+from src.cogs import CogManager
 
 
 class NexusBot(commands.Bot):
@@ -29,6 +30,7 @@ class NexusBot(commands.Bot):
         self.logger.warning("This is a test warning message")
         print("Debug: Logger messages sent...")  # Temporary debug print
         self.service_manager = ServiceManager()
+        self.cog_manager = CogManager(self)
 
     async def setup_hook(self):
         """Initialize bot services and load extensions."""
@@ -37,19 +39,12 @@ class NexusBot(commands.Bot):
         # Start all services
         await self.service_manager.start_all()
 
-        # Load extensions here
-        initial_extensions = [
-            "src.cogs.admin",
-            "src.cogs.general",
-            # Add more cogs as needed
-        ]
-
-        for extension in initial_extensions:
-            try:
-                await self.load_extension(extension)
-                self.logger.info(f"Loaded extension: {extension}")
-            except Exception as e:
-                self.logger.error(f"Failed to load extension {extension}: {e}")
+        # Load all cogs using the new cog manager
+        try:
+            await self.cog_manager.load_all_cogs()
+            self.logger.info("Successfully loaded all cogs")
+        except Exception as e:
+            self.logger.error(f"Error loading cogs: {e}")
 
     async def close(self):
         """Clean up and close the bot."""

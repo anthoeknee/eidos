@@ -1,5 +1,5 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from typing import Optional, Dict
+from typing import Optional
 
 
 class Settings(BaseSettings):
@@ -30,8 +30,9 @@ class Settings(BaseSettings):
     database_pool_timeout: int = 30
 
     # Redis Configuration
-    redis_url: str = "redis://172.17.0.2:6379"
-    redis_conversation_ttl: int = 5400
+    valkey_url: str = "redis://192.168.0.223:6379"
+    valkey_password: str
+    valkey_conversation_ttl: int = 5400
 
     # Logging Configuration
     log_level: str = "INFO"
@@ -45,4 +46,4 @@ settings = Settings()
 if __name__ == "__main__":
     print(f"Discord Token: {settings.discord_token}")
     print(f"Log Level: {settings.log_level}")
-    print(f"Redis URL: {settings.redis_url}")
+    print(f"Redis URL: {settings.valkey_url}")

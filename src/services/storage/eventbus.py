@@ -89,3 +89,12 @@ class EventBusService(BaseStorageService):
 
     async def hash_get(self, key: str, field: str) -> Optional[Any]:
         raise NotImplementedError("EventBus does not support hash operations")
+
+    # Add these methods to implement BaseService
+    async def start(self) -> None:
+        """Start the event bus service."""
+        await self.connect()
+
+    async def stop(self) -> None:
+        """Stop the event bus service."""
+        await self.disconnect()

@@ -1,22 +1,19 @@
 # Discord
-discord.py>=2.3.2
+discord.py>=2.3.0
 
-# Google Gemini AI
-google-genai
-
-# Image handling
-Pillow>=10.1.0
-
-# Async support
-aiohttp>=3.9.1
+# Database and Storage
+redis>=5.0.0
 asyncio>=3.4.3
 
-# Type hints
-typing-extensions>=4.9.0
+# Settings Management
+pydantic>=2.0.0
+pydantic-settings>=2.0.0
 
-# Settings management
-pydantic>=2.5.3
-pydantic-settings>=2.1.0
+# Async Database
+asyncpg>=0.28.0
 
-# Utilities
-python-dotenv>=1.0.0  # For loading environment variables
+# Type Hints
+typing-extensions>=4.7.0
+
+# Environment Variables
+python-dotenv>=1.0.0
