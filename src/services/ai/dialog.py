@@ -13,6 +13,8 @@ class DialogService(BaseService):
         self.memory_service = MemoryService(valkey=valkey)
         self.ai_provider = GoogleAIProvider(api_key=settings.google_api_key)
         self.logger = Logger(name="DialogService", level="INFO")
+        self.vector_index_name = "chat_embeddings"
+        self.vector_dimensions = 768  # Cohere embedding dimension
 
     async def generate_response(
         self,
@@ -34,13 +36,68 @@ class DialogService(BaseService):
             The AI's response content.
         """
         try:
-            # Get conversation history
-            history = await self.memory_service.get_memories(channel_id)
+            # Create vector index if it doesn't exist
+            await self.memory_service.valkey.create_vector_index(
+                self.vector_index_name, self.vector_dimensions
+            )
+
+            # Initialize lists for embeddings and combined message
+            user_embeddings = []
+            combined_user_message = []
+
+            # Process each part of the user message
+            for msg in user_message:
+                if isinstance(msg, str):
+                    combined_user_message.append(msg)
+                    text_embedding = (
+                        await self.memory_service.valkey.generate_text_embedding(msg)
+                    )
+                    user_embeddings.append(text_embedding)
+                elif isinstance(msg, dict):
+                    if "url" in msg and msg.get("content_type") in [
+                        "image",
+                        "image/png",
+                        "image/jpeg",
+                    ]:
+                        combined_user_message.append(msg.get("url", ""))
+                        image_embedding = (
+                            await self.memory_service.valkey.generate_image_embedding(
+                                msg.get("url")
+                            )
+                        )
+                        user_embeddings.append(image_embedding)
+                    elif "text" in msg:
+                        combined_user_message.append(msg.get("text", ""))
+                        text_embedding = (
+                            await self.memory_service.valkey.generate_text_embedding(
+                                msg.get("text")
+                            )
+                        )
+                        user_embeddings.append(text_embedding)
+
+            # Combine embeddings (average them)
+            if user_embeddings:
+                combined_embedding = [sum(x) / len(x) for x in zip(*user_embeddings)]
+            else:
+                combined_embedding = None
+
+            # Search for similar past conversations
+            search_results = []
+            if combined_embedding:
+                search_results = await self.memory_service.valkey.vector_knn_search(
+                    index_name=self.vector_index_name,
+                    query_vector=combined_embedding,
+                    top_k=3,
+                    tag=channel_id,
+                )
 
             # Format the conversation history into a prompt
             formatted_history = []
+            for doc_id, content, score in search_results:
+                formatted_history.append(f"Context: {content}")
 
             # Process historical messages
+            history = await self.memory_service.get_memories(channel_id)
             for memory in history:
                 if isinstance(memory, dict):
                     content = memory.get("content", [])
@@ -58,11 +115,7 @@ class DialogService(BaseService):
                                 formatted_history.append(f"Assistant: {response_text}")
 
             # Add the current message
-            current_message = (
-                user_message[0]
-                if isinstance(user_message[0], str)
-                else user_message[0].get("content", "")
-            )
+            current_message = " ".join(combined_user_message)
             formatted_history.append(f"Human: {current_message}")
             formatted_history.append("Assistant:")
 
@@ -81,7 +134,7 @@ class DialogService(BaseService):
             bot_content_types = ["text"]
 
             # Add interaction to memory
-            await self.memory_service.create_memory(
+            memory_id = await self.memory_service.create_memory(
                 category=channel_id,
                 content=[
                     {
@@ -105,6 +158,16 @@ class DialogService(BaseService):
                     }
                 ],
             )
+
+            # Store the user message and bot response with embeddings
+            if combined_embedding:
+                await self.memory_service.valkey.add_vector(
+                    index_name=self.vector_index_name,
+                    key=memory_id,
+                    vector=combined_embedding,
+                    content=f"Human: {current_message}\nAssistant: {response_text}",
+                    tag=channel_id,
+                )
 
             return bot_response
 

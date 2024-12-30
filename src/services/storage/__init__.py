@@ -37,9 +37,19 @@ class StorageFactory:
             Instance of the requested storage service
         """
         if storage_type not in cls._instances:
-            service_class = cls._service_map[storage_type]
+            if storage_type == StorageType.VALKEY:
+                from src.services.storage.valkey import ValkeyService
+
+                service_class = ValkeyService
+            elif storage_type == StorageType.EVENT_BUS:
+                from src.services.storage.eventbus import EventBusService
+
+                service_class = EventBusService
+            else:
+                raise ValueError(f"Invalid storage type: {storage_type}")
+
             instance = service_class(**kwargs)
-            await instance.connect()
+            await instance.start()
             cls._instances[storage_type] = instance
 
         return cls._instances[storage_type]
@@ -64,7 +74,6 @@ async def init_storage(**kwargs) -> None:
     logger = Logger(name="Storage", level="INFO")
 
     _valkey = await StorageFactory.get_storage(StorageType.VALKEY, **kwargs)
-    _event_bus = await StorageFactory.get_storage(StorageType.EVENT_BUS, **kwargs)
 
     logger.info("Storage services initialized")
 

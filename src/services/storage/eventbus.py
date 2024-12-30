@@ -1,5 +1,5 @@
 import asyncio
-from typing import Any, Callable, Dict, Optional, Set, List
+from typing import Any, Callable, Dict, Optional, Set, List, Tuple
 from src.services.storage.base import BaseStorageService
 
 
@@ -98,3 +98,28 @@ class EventBusService(BaseStorageService):
     async def stop(self) -> None:
         """Stop the event bus service."""
         await self.disconnect()
+
+    # Add these vector-related method implementations
+    async def create_vector_index(
+        self, index_name: str, vector_dimensions: int
+    ) -> None:
+        """Vector operations not supported in EventBus."""
+        raise NotImplementedError("EventBus does not support vector operations")
+
+    async def add_vector(
+        self, index_name: str, key: str, vector: List[float], content: str, tag: str
+    ) -> None:
+        """Vector operations not supported in EventBus."""
+        raise NotImplementedError("EventBus does not support vector operations")
+
+    async def vector_knn_search(
+        self, index_name: str, query_vector: List[float], top_k: int, tag: str
+    ) -> List[Tuple[str, str, float]]:
+        """Vector operations not supported in EventBus."""
+        raise NotImplementedError("EventBus does not support vector operations")
+
+    async def vector_range_search(
+        self, index_name: str, query_vector: List[float], radius: float, tag: str
+    ) -> List[Tuple[str, str, float]]:
+        """Vector operations not supported in EventBus."""
+        raise NotImplementedError("EventBus does not support vector operations")

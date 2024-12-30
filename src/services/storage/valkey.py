@@ -25,42 +25,35 @@ class ValkeyService(BaseStorageService):
         self._cohere_client = (
             cohere.Client(settings.cohere_api_key) if settings.cohere_api_key else None
         )
+        self._url = settings.valkey_url or "valkey://192.168.0.223:6379"
+        self.index_name = "chat_vectors"
+        self.doc_prefix = "doc:"
+        self.vector_dimensions = 1536  # Standard for many embedding models
+        self.logger = Logger(name="ValkeyService")
 
     async def connect(self) -> None:
-        """Connect to Valkey server."""
-        logger = Logger(name="Valkey", level="INFO")
-        max_retries = 3
-        retry_delay = 1
+        """Connect to Valkey and initialize vector index."""
+        try:
+            self._client = await valkey.Valkey.from_url(self._url)
+            await self._create_vector_index()
+            self.logger.info("Connected to Valkey and initialized vector index")
+        except Exception as e:
+            self.logger.error(f"Failed to connect to Valkey: {e}")
+            raise
 
-        for attempt in range(max_retries):
-            try:
-                self._client = valkey.Valkey.from_url(
-                    settings.valkey_url,
-                    socket_timeout=5,
-                    socket_connect_timeout=5,
-                    retry_on_timeout=True,
-                    decode_responses=True,
-                    health_check_interval=30,
-                )
-
-                # Test connection
-                async with asyncio.timeout(5):
-                    if not await self._client.ping():
-                        raise ConnectionError("Connection test failed")
-
-                self._pubsub = self._client.pubsub()
-                return
-
-            except (ConnectionError, asyncio.TimeoutError) as e:
-                if attempt < max_retries - 1:
-                    await asyncio.sleep(retry_delay)
-                    retry_delay *= 2
-                else:
-                    logger.error("Failed to connect to Valkey")
-                    raise
-            except Exception as e:
-                logger.error(f"Unexpected error connecting to Valkey: {str(e)}")
-                raise
+    async def _create_vector_index(self) -> None:
+        """Initialize vector storage using basic key-value functionality."""
+        try:
+            # Create a simple key to mark that we've initialized
+            index_key = f"{self.index_name}:initialized"
+            if not await self._client.exists(index_key):
+                await self._client.set(index_key, "1")
+                self.logger.info("Initialized vector storage")
+            else:
+                self.logger.info("Vector storage already initialized")
+        except Exception as e:
+            self.logger.error(f"Failed to initialize vector storage: {str(e)}")
+            raise
 
     async def disconnect(self) -> None:
         """Disconnect from Valkey server."""
@@ -247,100 +240,66 @@ class ValkeyService(BaseStorageService):
         await self._client.delete(f"lock:{lock_key}")
 
     # Vector Operations
-    async def create_vector_index(
-        self, index_name: str, vector_dimensions: int
-    ) -> None:
-        """Create a vector index."""
-        if not self._client:
-            raise Exception("Not connected to Valkey")
-        try:
-            # Check if index exists
-            await self._client.ft(index_name).info()
-            Logger(name="Valkey").info(f"Index {index_name} already exists!")
-        except:
-            # Schema
-            schema = (
-                TagField("tag"),
-                VectorField(
-                    "vector",
-                    "FLAT",
-                    {
-                        "TYPE": "FLOAT32",
-                        "DIM": vector_dimensions,
-                        "DISTANCE_METRIC": "COSINE",
-                    },
-                ),
-            )
-
-            # Index Definition
-            definition = IndexDefinition(prefix=["doc:"], index_type=IndexType.HASH)
-
-            # Create Index
-            await self._client.ft(index_name).create_index(
-                fields=schema, definition=definition
-            )
-            Logger(name="Valkey").info(f"Index {index_name} created successfully!")
-
     async def add_vector(
         self, index_name: str, key: str, vector: List[float], content: str, tag: str
     ) -> None:
-        """Add a vector to the index."""
+        """Store vector data using basic hash storage."""
         if not self._client:
             raise Exception("Not connected to Valkey")
 
-        await self._client.hset(
-            f"doc:{key}",
-            mapping={
-                "vector": np.array(vector, dtype=np.float32).tobytes(),
-                "content": content,
-                "tag": tag,
-            },
-        )
+        vector_data = {
+            "vector": json.dumps(vector),  # Store vector as JSON string
+            "content": content,
+            "tag": tag,
+        }
+
+        await self._client.hmset(f"{self.doc_prefix}{key}", vector_data)
 
     async def vector_knn_search(
         self, index_name: str, query_vector: List[float], top_k: int, tag: str
     ) -> List[Tuple[str, str, float]]:
-        """Perform a KNN search on the vector index."""
+        """Basic vector search implementation using brute force comparison."""
         if not self._client:
             raise Exception("Not connected to Valkey")
 
-        query = (
-            Query(f"(@tag:{{ {tag} }})=>[KNN {top_k} @vector $vec as score]")
-            .sort_by("score")
-            .return_fields("content", "tag", "score")
-            .paging(0, top_k)
-            .dialect(2)
-        )
+        # Get all keys with the document prefix
+        keys = await self._client.keys(f"{self.doc_prefix}*")
+        results = []
 
-        query_params = {"vec": np.array(query_vector, dtype=np.float32).tobytes()}
-        results = await self._client.ft(index_name).search(query, query_params)
+        # Fetch and compare vectors
+        for key in keys:
+            data = await self._client.hgetall(key)
+            if data and data.get("tag") == tag:
+                stored_vector = json.loads(data.get("vector", "[]"))
+                # Calculate cosine similarity
+                similarity = self._cosine_similarity(query_vector, stored_vector)
+                results.append((key, data.get("content", ""), similarity))
 
-        return [(doc.id, doc.content, float(doc.score)) for doc in results.docs]
+        # Sort by similarity and return top k results
+        results.sort(key=lambda x: x[2], reverse=True)
+        return results[:top_k]
+
+    def _cosine_similarity(self, vec1: List[float], vec2: List[float]) -> float:
+        """Calculate cosine similarity between two vectors."""
+        vec1 = np.array(vec1)
+        vec2 = np.array(vec2)
+        dot_product = np.dot(vec1, vec2)
+        norm1 = np.linalg.norm(vec1)
+        norm2 = np.linalg.norm(vec2)
+        return dot_product / (norm1 * norm2) if norm1 and norm2 else 0.0
 
     async def vector_range_search(
         self, index_name: str, query_vector: List[float], radius: float, tag: str
     ) -> List[Tuple[str, str, float]]:
-        """Perform a range search on the vector index."""
-        if not self._client:
-            raise Exception("Not connected to Valkey")
+        """Implement vector range search."""
+        vector_bytes = np.array(query_vector, dtype=np.float32).tobytes()
 
-        query = (
-            Query(
-                f"(@tag:{{ {tag} }})=>[VECTOR_RANGE $radius $vec]=>{{$YIELD_DISTANCE_AS: score}}"
-            )
-            .sort_by("score")
-            .return_fields("content", "tag", "score")
-            .paging(
-                0, 100
-            )  # Valkey doesn't support top_k for range queries, so we fetch 100 and filter
-            .dialect(2)
+        # Use FT.SEARCH with range syntax
+        query = f"(@tag:{{{tag}}})" f"[VECTOR_RANGE {radius} @vector $vec AS score]"
+
+        results = await self._client.ft(index_name).search(
+            query, {"vec": vector_bytes}, dialect=2
         )
-
-        query_params = {
-            "radius": radius,
-            "vec": np.array(query_vector, dtype=np.float32).tobytes(),
-        }
-        results = await self._client.ft(index_name).search(query, query_params)
 
         return [(doc.id, doc.content, float(doc.score)) for doc in results.docs]
 
@@ -359,3 +318,17 @@ class ValkeyService(BaseStorageService):
             texts=[image_url], model="multilingual-22-12", input_type="image-url"
         )
         return response.embeddings[0]
+
+    async def create_vector_index(
+        self, index_name: str, vector_dimensions: int
+    ) -> None:
+        """Implement the abstract method from BaseStorageService."""
+        self.index_name = index_name
+        self.vector_dimensions = vector_dimensions
+        await self._create_vector_index()
+
+    async def disconnect(self) -> None:
+        """Implement disconnect method."""
+        if self._client:
+            await self._client.close()
+            self._client = None
