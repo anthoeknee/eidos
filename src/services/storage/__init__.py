@@ -3,6 +3,7 @@ from typing import Dict, Optional, Type
 from src.services.storage.base import BaseStorageService
 from src.services.storage.valkey import ValkeyService
 from src.services.storage.eventbus import EventBusService
+from src.services.storage.postgres import PostgresService
 from src.utils.logger import Logger
 
 
@@ -11,6 +12,7 @@ class StorageType(Enum):
 
     VALKEY = "valkey"
     EVENT_BUS = "event_bus"
+    POSTGRES = "postgres"
 
 
 class StorageFactory:
@@ -20,6 +22,7 @@ class StorageFactory:
     _service_map: Dict[StorageType, Type[BaseStorageService]] = {
         StorageType.VALKEY: ValkeyService,
         StorageType.EVENT_BUS: EventBusService,
+        StorageType.POSTGRES: PostgresService,
     }
 
     @classmethod
@@ -45,6 +48,10 @@ class StorageFactory:
                 from src.services.storage.eventbus import EventBusService
 
                 service_class = EventBusService
+            elif storage_type == StorageType.POSTGRES:
+                from src.services.storage.postgres import PostgresService
+
+                service_class = PostgresService
             else:
                 raise ValueError(f"Invalid storage type: {storage_type}")
 
@@ -65,15 +72,25 @@ class StorageFactory:
 # Global storage instances for easy access
 _valkey: Optional[ValkeyService] = None
 _event_bus: Optional[EventBusService] = None
+_postgres: Optional[PostgresService] = None
 
 
 async def init_storage(**kwargs) -> None:
     """Initialize all storage services."""
-    global _valkey, _event_bus
+    global _valkey, _event_bus, _postgres
 
     logger = Logger(name="Storage", level="INFO")
 
-    _valkey = await StorageFactory.get_storage(StorageType.VALKEY, **kwargs)
+    storage_type = kwargs.get("storage_type", "valkey")
+
+    if storage_type == "valkey":
+        _valkey = await StorageFactory.get_storage(StorageType.VALKEY, **kwargs)
+    elif storage_type == "event_bus":
+        _event_bus = await StorageFactory.get_storage(StorageType.EVENT_BUS, **kwargs)
+    elif storage_type == "postgres":
+        _postgres = await StorageFactory.get_storage(StorageType.POSTGRES, **kwargs)
+    else:
+        raise ValueError(f"Invalid storage type: {storage_type}")
 
     logger.info("Storage services initialized")
 
@@ -95,3 +112,10 @@ def get_event_bus() -> EventBusService:
     if _event_bus is None:
         raise RuntimeError("Event Bus storage service not initialized")
     return _event_bus
+
+
+def get_postgres() -> PostgresService:
+    """Get the Postgres storage service instance."""
+    if _postgres is None:
+        raise RuntimeError("Postgres storage service not initialized")
+    return _postgres
