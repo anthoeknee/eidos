@@ -2,19 +2,29 @@
 discord.py>=2.3.0
 
 # Database and Storage
-redis>=5.0.0
+asyncpg>=0.29.0
+# redis>=5.0.0 # Removed redis
 asyncio>=3.4.3
 
 # Settings Management
 pydantic>=2.0.0
 pydantic-settings>=2.0.0
 
-# Async Database
-aiosqlite
-sqlite-vss
-
 # Type Hints
 typing-extensions>=4.7.0
 
 # Environment Variables
 python-dotenv>=1.0.0
+
+# Google Generative AI
+google-genai
+
+# Cohere
+cohere
+
+# Vector Database
+# qdrant-client # Removed qdrant
+
+# Postgres and pgvector
+psycopg2-binary
+pgvector
