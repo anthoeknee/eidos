@@ -1,8 +1,8 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from pydantic import field_validator, SecretStr
+from pydantic import field_validator
 from typing import Optional
 from pathlib import Path
-import os
+from urllib.parse import urlparse
 
 
 class Settings(BaseSettings):
@@ -11,7 +11,7 @@ class Settings(BaseSettings):
     DISCORD_OWNER_ID: int
     DISCORD_COMMAND_PREFIX: str = "n!"
 
-    # AI Provider API Keys
+    # AI Provider API Keys - all optional
     XAI_API_KEY: Optional[str] = None
     OPENAI_API_KEY: Optional[str] = None
     GROQ_API_KEY: Optional[str] = None
@@ -20,17 +20,11 @@ class Settings(BaseSettings):
     GOOGLE_API_KEY: Optional[str] = None
 
     # Database Configuration
-    POSTGRES_USER: str = "eidos"
-    POSTGRES_PASSWORD: SecretStr = SecretStr("gPCZn3etyNEAn7Pgj5JEW4gz")
-    POSTGRES_HOST: str = "34.59.232.41"
-    POSTGRES_PORT: int = 5432
-    POSTGRES_DB: str = "db"
-    POSTGRES_URL: Optional[str] = None
+    POSTGRES_URL: str
 
     # Redis Configuration
     REDIS_URL: str
-    REDIS_PASSWORD: str
-    REDIS_CONVERSATION_TTL: int = 5400  # Default 90 minutes
+    REDIS_CONVERSATION_TTL: int = 5400
 
     # Logging Configuration
     LOG_LEVEL: str = "INFO"
@@ -53,30 +47,41 @@ class Settings(BaseSettings):
 
     @field_validator("POSTGRES_URL")
     @classmethod
-    def validate_postgres_url(cls, v: Optional[str], values) -> str:
-        if v:
-            # If POSTGRES_URL is provided directly, validate and return it
-            if v.startswith("postgres://"):
-                v = "postgresql://" + v[len("postgres://") :]
-            return v
+    def validate_postgres_url(cls, v: str) -> str:
+        if not v.startswith(("postgres://", "postgresql://")):
+            raise ValueError("Invalid POSTGRES_URL format")
 
-        # Construct URL from components
-        user = values.data.get("POSTGRES_USER")
-        password = values.data.get("POSTGRES_PASSWORD").get_secret_value()
-        host = values.data.get("POSTGRES_HOST")
-        port = values.data.get("POSTGRES_PORT")
-        db = values.data.get("POSTGRES_DB")
+        # Replace postgres:// with postgresql+psycopg2:// but preserve any query parameters
+        base_url = v.split("?")[0]
+        query_params = v.split("?")[1] if "?" in v else ""
 
-        return f"postgresql://{user}:{password}@{host}:{port}/{db}"
+        new_base = base_url.replace("postgres://", "postgresql+psycopg2://", 1).replace(
+            "postgresql://", "postgresql+psycopg2://", 1
+        )
 
-    def get_database_url(self) -> str:
-        """
-        Get database URL with priority:
-        1. Environment variable DATABASE_URL
-        2. Configured POSTGRES_URL
-        3. Constructed URL from components
-        """
-        return os.getenv("DATABASE_URL") or self.POSTGRES_URL
+        return f"{new_base}{'?' + query_params if query_params else ''}"
+
+    @field_validator("REDIS_URL")
+    @classmethod
+    def validate_redis_url(cls, v: str):
+        parsed_url = urlparse(v)
+        if parsed_url.scheme not in ["redis", "rediss"]:
+            raise ValueError(
+                "Invalid REDIS_URL scheme. Must be 'redis://' or 'rediss://'"
+            )
+
+        # Reconstruct the URL with proper formatting
+        auth_part = ""
+        if parsed_url.username and parsed_url.password:
+            auth_part = f"{parsed_url.username}:{parsed_url.password}@"
+        elif parsed_url.password:
+            auth_part = f":{parsed_url.password}@"
+
+        # Use default port if not specified
+        port = parsed_url.port or 6379
+
+        # Keep the original scheme (redis://) since we're not using SSL
+        return f"redis://{auth_part}{parsed_url.hostname}:{port}"
 
     model_config = SettingsConfigDict(
         env_file=".env", env_file_encoding="utf-8", case_sensitive=True, extra="ignore"
@@ -87,6 +92,5 @@ class Settings(BaseSettings):
 config = Settings()
 
 
-# Example of how to use typing hints with the config
 def get_config() -> Settings:
     return config

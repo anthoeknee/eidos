@@ -11,12 +11,15 @@ class EidosBot(commands.Bot):
         super().__init__(*args, **kwargs)
         self.service_loader = None
         self.cog_loader = None
+        self.db = None
+        self.cache = None
 
     async def setup_hook(self) -> None:
         """Setup hook to load services and cogs."""
         try:
-            self.service_loader, self.cog_loader = await load_all(self)
+            services, self.cog_loader = await load_all(self)
             logger.info("All services and cogs loaded successfully.")
+            await self.setup_services(services)
         except Exception as e:
             logger.critical(f"Failed to load services or cogs: {e}")
             await self.close()
@@ -46,6 +49,10 @@ class EidosBot(commands.Bot):
         else:
             logger.error(f"Command error: {error}")
             await ctx.send("An error occurred while processing the command.")
+
+    async def setup_services(self, services):
+        self.db = services.get("database")
+        self.cache = services.get("cache")
 
 
 async def main():

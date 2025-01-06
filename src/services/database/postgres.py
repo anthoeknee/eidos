@@ -8,20 +8,12 @@ from src.config import config
 from src.utils.logger import logger
 from contextlib import contextmanager
 from typing import Generator, Any, List, Type, Dict, Tuple
-import sqlalchemy.types as types
-from sqlalchemy.dialects.postgresql import VECTOR
 from sqlalchemy.orm.decl_api import DeclarativeMeta  # For type hinting
-
-
-class Vector(types.TypeDecorator):
-    """PostgreSQL vector type for storing embeddings."""
-
-    impl = VECTOR
-    cache_ok = True
-
-    def __init__(self, dimensions):
-        super().__init__()
-        self.dimensions = dimensions
+import os
+import asyncio
+from .types import Vector
+from urllib.parse import urlparse
+from alembic.script import ScriptDirectory
 
 
 class PostgresService:
@@ -34,18 +26,90 @@ class PostgresService:
     async def setup(self):
         """Initialize the database connection and perform migrations."""
         try:
-            db_url = config.get_database_url()
-            self.engine = create_engine(db_url)
+            logger.info("Starting PostgreSQL Database Setup...")
+
+            db_url = config.POSTGRES_URL
+            parsed_url = urlparse(db_url)
+
+            connect_args = {
+                "connect_timeout": 10,
+                "options": "-c statement_timeout=10000",
+            }
+
+            if (
+                parsed_url.hostname != "localhost"
+                and not parsed_url.hostname.startswith("127.0.")
+            ):
+                connect_args["sslmode"] = "prefer"
+
+            self.engine = create_engine(
+                db_url,
+                connect_args=connect_args,
+                pool_size=5,
+                max_overflow=10,
+                pool_timeout=30,
+                pool_recycle=1800,
+                pool_pre_ping=True,
+            )
+
+            # Initialize Alembic configuration first
+            self.alembic_config = Config("alembic.ini")
+
+            with self.engine.connect() as conn:
+                logger.info("Checking database status...")
+
+                # Check if alembic_version table exists
+                result = conn.execute(
+                    text("""
+                    SELECT EXISTS (
+                        SELECT FROM information_schema.tables
+                        WHERE table_name = 'alembic_version'
+                    );
+                """)
+                )
+                has_alembic_table = result.scalar()
+
+                if has_alembic_table:
+                    # Get current revision
+                    current = conn.execute(
+                        text("SELECT version_num FROM alembic_version")
+                    ).scalar()
+
+                    # Get head revision from migrations
+                    script = ScriptDirectory.from_config(self.alembic_config)
+                    head = script.get_current_head()
+
+                    if current == head:
+                        logger.info("Database is up to date, skipping migrations")
+                        self.SessionLocal = sessionmaker(
+                            autocommit=False, autoflush=False, bind=self.engine
+                        )
+                        return self
+                    else:
+                        logger.info(f"Database needs upgrade: {current} -> {head}")
+                else:
+                    logger.info("First-time database setup needed")
+
+                # Run migrations if we get here
+                logger.info("Running migrations...")
+                try:
+                    with self.engine.begin() as connection:
+                        self.alembic_config.attributes["connection"] = connection
+                        command.upgrade(self.alembic_config, "head")
+                        logger.info("Database migrations completed successfully")
+                except Exception as e:
+                    logger.error(f"Migration failed: {e}")
+                    raise
+
             self.SessionLocal = sessionmaker(
                 autocommit=False, autoflush=False, bind=self.engine
             )
-            logger.info("Database engine created successfully.")
 
-            await self._run_migrations()
-            logger.info("Database migrations completed successfully.")
+            logger.info("PostgreSQL Database Setup Complete!")
+            return self
 
-        except SQLAlchemyError as e:
-            logger.error(f"Database setup failed: {e}")
+        except Exception as e:
+            logger.error(f"❌ Database setup failed: {e}")
             raise
 
     @contextmanager
@@ -66,7 +130,7 @@ class PostgresService:
     async def _run_migrations(self):
         """Run database migrations using Alembic."""
         try:
-            migrations_dir = Path(__file__).parent.parent.parent / "migrations"
+            migrations_dir = Path(os.getcwd()) / "migrations"
             if not migrations_dir.exists():
                 logger.warning(
                     "Migrations directory not found. Skipping database migrations."
@@ -75,15 +139,13 @@ class PostgresService:
 
             self.alembic_config = Config()
             self.alembic_config.set_main_option("script_location", str(migrations_dir))
-            self.alembic_config.set_main_option(
-                "sqlalchemy.url", config.get_database_url()
-            )
+            self.alembic_config.set_main_option("sqlalchemy.url", config.POSTGRES_URL)
 
             command.upgrade(self.alembic_config, "head")
-            logger.info("Database migrations ran successfully.")
+            logger.info("Database migrations completed successfully")
 
         except Exception as e:
-            logger.error(f"Database migrations failed: {e}")
+            logger.error(f"❌ Database migrations failed: {e}")
             raise
 
     def vector_similarity_search(
