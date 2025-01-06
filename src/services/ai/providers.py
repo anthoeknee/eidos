@@ -7,12 +7,21 @@ from google.genai import types
 import base64
 import cohere
 from discord import Attachment
+import asyncio
 
 
 class GoogleAIProvider:
-    def __init__(self, api_key: str, model_id: str = "gemini-2.0-flash-exp"):
+    def __init__(self, api_key: str, model_id: str = "gemini-pro"):
         self.client = genai.Client(api_key=api_key)
         self.model_id = model_id
+
+        # Configure default generation parameters
+        self.default_config = types.GenerateContentConfig(
+            temperature=0.7,
+            top_k=40,
+            top_p=0.95,
+            max_output_tokens=2048,
+        )
 
     def create_chat(
         self, system_instruction: Optional[str] = None, temperature: float = 0.5
@@ -147,7 +156,7 @@ class CohereAIProvider:
         embedding_types: Optional[List[str]] = None,
         truncate: str = "END",
         return_raw: bool = False,
-    ) -> Union[Dict[str, Any], cohere.responses.EmbedResponse]:
+    ) -> Union[Dict[str, Any], Any]:
         """
         Unified method to generate embeddings for text or images.
         Returns either the raw response object or just the embedding data.
@@ -165,16 +174,18 @@ class CohereAIProvider:
 
         if input_type == "search_document":
             try:
-                response = await self.client.embed(
-                    model=self.model_id,
-                    input_type="search_document",
-                    embedding_types=embedding_types,
+                response = await asyncio.to_thread(
+                    self.client.embed,
                     texts=inputs,
-                    truncate=truncate,
+                    model="embed-english-v3.0",
+                    input_type="search_query",
+                    embedding_types=["float"],
+                    truncate="END",
                 )
+                # Access embeddings correctly based on Cohere's V3 response structure
+                return response.embeddings.float[0] if not return_raw else response
             except Exception as e:
                 raise ValueError(f"Error generating text embeddings: {e}")
-            return response if return_raw else response.embeddings
 
         elif input_type == "image":
             image_base64_list = []

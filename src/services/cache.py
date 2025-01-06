@@ -1,26 +1,93 @@
-from typing import Optional, List, Dict, Set
-import redis
-from src.config import config
-from src.utils import logger
+from redis import Redis
+from redis.retry import Retry
+from redis.backoff import ExponentialBackoff
+from redis.exceptions import ConnectionError, TimeoutError
 from urllib.parse import urlparse
-import socket
+import logging
+from typing import Optional, Dict, List, Set
+
+logger = logging.getLogger(__name__)
 
 
 class CacheService:
-    def __init__(self, redis_client: redis.Redis):
+    def __init__(self, redis_client: Redis):
+        """Initialize the cache service with a Redis client."""
         self.redis_client = redis_client
 
-    async def set(self, key: str, value: str, expiry: Optional[int] = None):
-        self.redis_client.set(key, value, ex=expiry)
+    @classmethod
+    def create_from_url(cls, redis_url: str) -> "CacheService":
+        """Create a new CacheService instance from a Redis URL."""
+        try:
+            parsed_url = urlparse(redis_url)
+
+            # Extract authentication details
+            if "@" in parsed_url.netloc:
+                auth_part, host_part = parsed_url.netloc.split("@")
+                if ":" in auth_part:
+                    _, password = auth_part.split(":")
+                else:
+                    password = auth_part
+            else:
+                password = None
+                host_part = parsed_url.netloc
+
+            # Extract host and port
+            if ":" in host_part:
+                host, port = host_part.split(":")
+                port = int(port)
+            else:
+                host = host_part
+                port = 6379
+
+            retry_strategy = Retry(
+                backoff=ExponentialBackoff(cap=10, base=1),
+                retries=3,
+                supported_errors=(ConnectionError, TimeoutError),
+            )
+
+            redis_client = Redis(
+                host=host,
+                port=port,
+                password=password,
+                retry_on_timeout=True,
+                retry=retry_strategy,
+                socket_keepalive=True,
+                health_check_interval=30,
+            )
+
+            # Test connection
+            redis_client.ping()
+            logger.info(f"Successfully connected to Redis at {host}:{port}")
+
+            return cls(redis_client)
+
+        except Exception as e:
+            logger.error(f"Failed to create Redis client: {e}")
+            raise
+
+    async def set(self, key: str, value: str, expiry: int = None):
+        try:
+            self.redis_client.set(key, value, ex=expiry)
+        except (ConnectionError, TimeoutError) as e:
+            logger.error(f"Redis connection error: {e}")
+            # Attempt to reconnect
+            self.redis_client.ping()
+            # Retry the operation
+            self.redis_client.set(key, value, ex=expiry)
 
     async def get(self, key: str) -> Optional[str]:
-        value = self.redis_client.get(key)
-        if value:
-            return value.decode("utf-8")
-        return None
+        try:
+            value = self.redis_client.get(key)
+            return value.decode("utf-8") if value else None
+        except (ConnectionError, TimeoutError) as e:
+            logger.error(f"Redis connection error: {e}")
+            return None
 
     async def delete(self, key: str):
-        self.redis_client.delete(key)
+        try:
+            self.redis_client.delete(key)
+        except (ConnectionError, TimeoutError) as e:
+            logger.error(f"Redis connection error: {e}")
 
     async def clear(self):
         """Clear all keys from the cache."""
@@ -79,22 +146,16 @@ class CacheService:
 
 
 async def setup(bot):
+    """Setup the cache service."""
     try:
-        parsed_url = urlparse(config.REDIS_URL)
+        from src.config import get_config
 
-        # Configure Redis client
-        redis_client = redis.Redis.from_url(
-            config.REDIS_URL,
-            decode_responses=True,
-            socket_timeout=10,
-            retry_on_timeout=True,
-        )
+        config = get_config()
 
-        # Test connection
-        redis_client.ping()
+        redis_url = config.REDIS_URL
+        cache_service = CacheService.create_from_url(redis_url)
         logger.info("Redis cache service initialized successfully")
-        cache_service = CacheService(redis_client)
         return cache_service
-    except redis.exceptions.ConnectionError as e:
-        logger.error(f"Failed to connect to Redis: {e}")
+    except Exception as e:
+        logger.error(f"Failed to initialize Redis cache service: {e}")
         raise

@@ -782,3 +782,108 @@ LINE 1: INSERT INTO alembic_version (version_num) VALUES ('5af010037...
 [2025-01-06 02:13:53] [SUCCESS] Logged in as Eidos (ID: 1319007682476118059)
 [2025-01-06 02:13:53] [INFO] Connected to 2 guilds.
 [2025-01-06 02:13:54] [INFO] Synced 0 application commands.
+[2025-01-06 06:34:41] [INFO] Attempting to load services: cache, database, ai
+[2025-01-06 06:34:41] [INFO] Redis cache service initialized successfully
+[2025-01-06 06:34:42] [INFO] Starting PostgreSQL Database Setup...
+[2025-01-06 06:34:43] [INFO] Checking database status...
+[2025-01-06 06:34:43] [INFO] Database is up to date, skipping migrations
+[2025-01-06 06:34:43] [WARNING] Service ai has no setup function.
+[2025-01-06 06:34:43] [INFO] Loaded services: cache, database
+[2025-01-06 06:34:44] [ERROR] Failed to load cog chat: module 'cohere' has no attribute 'responses'
+[2025-01-06 06:34:44] [INFO] All services and cogs loaded successfully.
+[2025-01-06 06:34:47] [SUCCESS] Logged in as Eidos (ID: 1319007682476118059)
+[2025-01-06 06:34:47] [INFO] Connected to 2 guilds.
+[2025-01-06 06:36:02] [INFO] Attempting to load services: cache, database, ai
+[2025-01-06 06:36:03] [INFO] Redis cache service initialized successfully
+[2025-01-06 06:36:03] [INFO] Starting PostgreSQL Database Setup...
+[2025-01-06 06:36:04] [INFO] Checking database status...
+[2025-01-06 06:36:04] [INFO] Database is up to date, skipping migrations
+[2025-01-06 06:36:05] [ERROR] Failed to load service ai: module 'cohere' has no attribute 'responses'
+[2025-01-06 06:36:05] [CRITICAL] Failed to load services or cogs: module 'cohere' has no attribute 'responses'
+[2025-01-06 06:37:09] [INFO] Attempting to load services: cache, database, ai
+[2025-01-06 06:37:10] [INFO] Redis cache service initialized successfully
+[2025-01-06 06:37:10] [INFO] Starting PostgreSQL Database Setup...
+[2025-01-06 06:37:11] [INFO] Checking database status...
+[2025-01-06 06:37:11] [INFO] Database is up to date, skipping migrations
+[2025-01-06 06:37:12] [ERROR] Failed during setup of service ai: 'EidosBot' object has no attribute 'services'
+[2025-01-06 06:37:12] [ERROR] Failed to load service ai: 'EidosBot' object has no attribute 'services'
+[2025-01-06 06:37:12] [CRITICAL] Failed to load services or cogs: 'EidosBot' object has no attribute 'services'
+[2025-01-06 06:37:55] [CRITICAL] Bot failed to start: 'EidosBot' object has no attribute 'load_services'
+[2025-01-06 06:39:14] [INFO] Attempting to load services: cache, database, ai
+[2025-01-06 06:39:15] [INFO] Redis cache service initialized successfully
+[2025-01-06 06:39:15] [INFO] Starting PostgreSQL Database Setup...
+[2025-01-06 06:39:16] [INFO] Checking database status...
+[2025-01-06 06:39:16] [INFO] Database is up to date, skipping migrations
+[2025-01-06 06:39:17] [INFO] Loaded services: cache, database, ai
+[2025-01-06 06:39:17] [ERROR] Failed to load cog chat: Attribute name 'metadata' is reserved when using the Declarative API.
+[2025-01-06 06:39:44] [INFO] Attempting to load services: cache, database, ai
+[2025-01-06 06:39:44] [INFO] Redis cache service initialized successfully
+[2025-01-06 06:39:44] [INFO] Starting PostgreSQL Database Setup...
+[2025-01-06 06:39:46] [INFO] Checking database status...
+[2025-01-06 06:39:46] [INFO] Database is up to date, skipping migrations
+[2025-01-06 06:39:47] [INFO] Loaded services: cache, database, ai
+[2025-01-06 06:39:47] [ERROR] Failed to load cog chat: 'ChatCog' object has no attribute '_process_memories'
+[2025-01-06 06:39:49] [SUCCESS] Logged in as Eidos (ID: 1319007682476118059)
+[2025-01-06 06:39:49] [INFO] Connected to 2 guilds.
+[2025-01-06 06:39:49] [INFO] Synced 0 application commands.
+[2025-01-06 06:40:09] [INFO] Attempting to load services: cache, database, ai
+[2025-01-06 06:40:09] [INFO] Redis cache service initialized successfully
+[2025-01-06 06:40:09] [INFO] Starting PostgreSQL Database Setup...
+[2025-01-06 06:40:10] [INFO] Checking database status...
+[2025-01-06 06:40:11] [INFO] Database is up to date, skipping migrations
+[2025-01-06 06:40:12] [INFO] Loaded services: cache, database, ai
+[2025-01-06 06:40:12] [INFO] Loaded cog: chat
+[2025-01-06 06:41:16] [INFO] Attempting to load services: cache, database, ai
+[2025-01-06 06:41:16] [INFO] Redis cache service initialized successfully
+[2025-01-06 06:41:17] [INFO] Starting PostgreSQL Database Setup...
+[2025-01-06 06:41:18] [INFO] Checking database status...
+[2025-01-06 06:41:18] [INFO] Database is up to date, skipping migrations
+[2025-01-06 06:41:19] [INFO] Loaded services: cache, database, ai
+[2025-01-06 06:41:19] [ERROR] Failed to load cog chat: Long-term memory service not initialized
+[2025-01-06 06:41:21] [SUCCESS] Logged in as Eidos (ID: 1319007682476118059)
+[2025-01-06 06:41:21] [INFO] Connected to 2 guilds.
+[2025-01-06 06:41:21] [INFO] Synced 0 application commands.
+[2025-01-06 06:41:47] [INFO] Attempting to load services: cache, database, ai
+[2025-01-06 06:41:47] [INFO] Redis cache service initialized successfully
+[2025-01-06 06:41:48] [INFO] Starting PostgreSQL Database Setup...
+[2025-01-06 06:41:49] [INFO] Checking database status...
+[2025-01-06 06:41:49] [INFO] Database is up to date, skipping migrations
+[2025-01-06 06:41:50] [INFO] Loaded services: cache, database, ai
+[2025-01-06 06:41:50] [ERROR] Failed to load cog chat: Long-term memory service not initialized
+[2025-01-06 06:41:58] [INFO] Attempting to load services: cache, database, ai
+[2025-01-06 06:41:58] [INFO] Redis cache service initialized successfully
+[2025-01-06 06:41:59] [INFO] Starting PostgreSQL Database Setup...
+[2025-01-06 06:42:00] [INFO] Checking database status...
+[2025-01-06 06:42:00] [INFO] Database is up to date, skipping migrations
+[2025-01-06 06:42:01] [INFO] Loaded services: cache, database, ai
+[2025-01-06 06:42:01] [ERROR] Failed to load cog chat: Long-term memory service not initialized
+[2025-01-06 06:42:28] [INFO] Attempting to load services: cache, database, ai
+[2025-01-06 06:42:29] [INFO] Redis cache service initialized successfully
+[2025-01-06 06:42:29] [INFO] Starting PostgreSQL Database Setup...
+[2025-01-06 06:42:30] [INFO] Checking database status...
+[2025-01-06 06:42:30] [INFO] Database is up to date, skipping migrations
+[2025-01-06 06:42:31] [INFO] Loaded services: cache, database, ai
+[2025-01-06 06:42:31] [ERROR] Failed to load cog chat: Long-term memory service not initialized
+[2025-01-06 06:42:40] [INFO] Attempting to load services: cache, database, ai
+[2025-01-06 06:42:41] [INFO] Redis cache service initialized successfully
+[2025-01-06 06:42:41] [INFO] Starting PostgreSQL Database Setup...
+[2025-01-06 06:42:42] [INFO] Checking database status...
+[2025-01-06 06:42:43] [INFO] Database is up to date, skipping migrations
+[2025-01-06 06:42:44] [WARNING] Service 'database' not found
+[2025-01-06 06:42:44] [WARNING] Service 'cache' not found
+[2025-01-06 06:42:44] [INFO] Loaded services: cache, database, ai
+[2025-01-06 06:42:44] [WARNING] Service 'ai.long_term_memory' not found
+[2025-01-06 06:42:44] [ERROR] Failed to load cog chat: Long-term memory service not initialized
+[2025-01-06 06:44:22] [INFO] Redis cache service initialized successfully
+[2025-01-06 06:44:22] [CRITICAL] Bot failed to start: PostgresService.__init__() missing 1 required positional argument: 'bot'
+[2025-01-06 06:44:41] [INFO] Redis cache service initialized successfully
+[2025-01-06 06:44:41] [CRITICAL] Bot failed to start: 'PostgresService' object has no attribute 'initialize'
+[2025-01-06 06:44:59] [INFO] Redis cache service initialized successfully
+[2025-01-06 06:45:01] [SUCCESS] Logged in as Eidos (ID: 1319007682476118059)
+[2025-01-06 06:45:01] [INFO] Connected to 2 guilds.
+[2025-01-06 06:45:02] [INFO] Synced 0 application commands.
+[2025-01-06 06:45:57] [INFO] Redis cache service initialized successfully
+[2025-01-06 06:48:24] [INFO] Redis cache service initialized successfully
+[2025-01-06 06:48:52] [INFO] Redis cache service initialized successfully
+[2025-01-06 06:49:22] [INFO] Redis cache service initialized successfully
+[2025-01-06 06:49:54] [INFO] Redis cache service initialized successfully
