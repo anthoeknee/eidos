@@ -1,15 +1,11 @@
 import asyncio
-import logging
 from src.bot import Bot
 from src.loaders import load_all
 from src.config import get_config
+from src.utils.logger import logger
 
 
 async def main():
-    # Configure logging
-    logging.basicConfig(level=logging.INFO)
-    logger = logging.getLogger(__name__)
-
     # Create bot instance
     bot = Bot()
 
@@ -24,7 +20,7 @@ async def main():
         config = get_config()
         await bot.start(config.DISCORD_TOKEN)
     except Exception as e:
-        logger.error(f"Error during startup: {e}", exc_info=True)
+        logger.error(f"Error during startup: {e}")
         raise
 
 
