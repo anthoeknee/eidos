@@ -3,9 +3,7 @@ from src.services.ai.providers import GoogleAIProvider, CohereAIProvider
 from src.services.ai.memory.long_term import LongTermMemory
 from src.services.ai.memory.short_term import ShortTermMemory
 from src.config import get_config
-import logging
-
-logger = logging.getLogger(__name__)
+from src.utils.logger import logger
 
 
 class AIService:
@@ -28,34 +26,37 @@ class AIService:
 
 async def setup(bot):
     """Setup function for the AI service."""
-    logger.info("Initializing AI service...")
-
     ai_service = AIService(bot)
-    await ai_service.initialize()
 
-    # Get required services
-    logger.info("Fetching required services...")
-    db_service = await bot.get_service("database")
-    cache_service = await bot.get_service("cache")
+    try:
+        # Initialize core services
+        await ai_service.initialize()
+        db_service = await bot.get_service("database")
+        cache_service = await bot.get_service("cache")
 
-    # Initialize memory systems with proper dependencies
-    logger.info("Initializing memory systems...")
-    ai_service.short_term_memory = ShortTermMemory(cache_service)
-    ai_service.long_term_memory = LongTermMemory(db_service, bot)
+        # Initialize memory systems and register services
+        ai_service.short_term_memory = ShortTermMemory(cache_service)
+        ai_service.long_term_memory = LongTermMemory(db_service, bot)
 
-    # Register services with explicit logging
-    logger.info("Registering AI services...")
-    bot.services["ai.long_term_memory"] = ai_service.long_term_memory
-    bot.services["ai.short_term_memory"] = ai_service.short_term_memory
-    if ai_service.google_ai:
-        bot.services["ai.google"] = ai_service.google_ai
-    if ai_service.cohere:
-        bot.services["ai.cohere"] = ai_service.cohere
-        # Register Cohere as the embeddings provider
-        bot.services["ai.embeddings"] = ai_service.cohere
-    bot.services["ai"] = ai_service
+        # Register all AI-related services
+        services_to_register = {
+            "ai": ai_service,
+            "ai.long_term_memory": ai_service.long_term_memory,
+            "ai.short_term_memory": ai_service.short_term_memory,
+        }
 
-    # Log available services
-    logger.info(f"Available services after registration: {list(bot.services.keys())}")
+        if ai_service.google_ai:
+            services_to_register["ai.google"] = ai_service.google_ai
+        if ai_service.cohere:
+            services_to_register["ai.cohere"] = ai_service.cohere
+            services_to_register["ai.embeddings"] = ai_service.cohere
 
-    return ai_service
+        for name, service in services_to_register.items():
+            bot.services[name] = service
+
+        logger.info("🤖 AI Service initialized")
+        return ai_service
+
+    except Exception as e:
+        logger.error(f"❌ AI Service initialization failed: {str(e)}", exc_info=True)
+        raise

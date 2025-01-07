@@ -1,12 +1,7 @@
 import discord
 from discord.ext import commands
-from src.services.ai.memory.short_term import ShortTermMemory
-from src.services.ai.providers import GoogleAIProvider
-from src.services.ai.memory.long_term import LongTermMemory
 import asyncio
-import logging
-
-logger = logging.getLogger(__name__)
+from src.utils.logger import logger
 
 
 class ChatCog(commands.Cog):
@@ -67,13 +62,9 @@ class ChatCog(commands.Cog):
         if not all([short_term_memory, long_term_memory]):
             return
 
-        # Enhanced message processing
         channel_id = str(message.channel.id)
-
-        # Store message with enhanced metadata
         await short_term_memory.add_message(message)
 
-        # Process attachments with better context
         if message.attachments:
             for attachment in message.attachments:
                 if attachment.content_type.startswith("image/"):
@@ -92,7 +83,6 @@ class ChatCog(commands.Cog):
                         metadata=context,
                     )
 
-        # Handle responses
         should_respond = (
             isinstance(message.channel, discord.DMChannel)
             or self.bot.user.mentioned_in(message)
@@ -103,10 +93,9 @@ class ChatCog(commands.Cog):
             )
         )
 
-        # Handle case where prefix might be a list
         prefix = self.bot.command_prefix(self.bot, message)
         if isinstance(prefix, list):
-            prefix = prefix[0]  # Take the first prefix if it's a list
+            prefix = prefix[0]
 
         if should_respond and not message.content.startswith(prefix):
             await self.handle_ai_response(message)
@@ -116,24 +105,21 @@ class ChatCog(commands.Cog):
 
     async def handle_ai_response(self, message: discord.Message):
         try:
-            print("Starting AI response generation")
+            logger.debug("Starting AI response generation")
             short_term_memory = await self.bot.get_service("ai.short_term_memory")
             google_ai = await self.bot.get_service("ai.google")
             long_term_memory = await self.bot.get_service("ai.long_term_memory")
 
             if not all([short_term_memory, google_ai, long_term_memory]):
-                print("Failed to get required services")
+                logger.error("Failed to get required services")
                 await message.channel.send(
                     "I'm having trouble accessing my required services. Please try again later."
                 )
                 return
 
             channel_id = str(message.channel.id)
-
-            # Get recent conversation context
             messages = await short_term_memory.get_messages(channel_id)
 
-            # Retrieve relevant long-term memories with error handling
             relevant_memories = []
             try:
                 relevant_memories = await long_term_memory.search_memories(
@@ -144,9 +130,7 @@ class ChatCog(commands.Cog):
                 )
             except Exception as e:
                 logger.warning(f"Could not access long-term memories: {e}")
-                # Continue without long-term memories rather than failing completely
 
-            # Build enhanced context
             memory_context = ""
             if relevant_memories:
                 memory_context = "Relevant past context:\n" + "\n".join(
@@ -156,14 +140,12 @@ class ChatCog(commands.Cog):
                     ]
                 )
 
-            # Get conversation metadata
             conversation_meta = await short_term_memory.get_metadata(channel_id)
 
             system_prompt = """You are a helpful Discord bot assistant with both short-term and long-term memory.
             Use the provided conversation context and relevant memories to give informed, contextual responses.
             Keep responses natural and conversational while being helpful and informative."""
 
-            # Build enhanced conversation history
             conversation = "\n".join(
                 [
                     f"{'Bot: ' if msg.startswith(self.bot.user.name) else 'User: '}{msg}"
@@ -171,15 +153,12 @@ class ChatCog(commands.Cog):
                 ]
             )
 
-            # Construct full prompt with enhanced context
             full_prompt = f"{system_prompt}\n\n{memory_context}\n\nCurrent conversation:\n{conversation}\n\nUser: {message.content}\nBot:"
 
-            print("Generating response with enhanced context...")
+            logger.debug("Generating response with enhanced context...")
             response = await google_ai.generate(prompt=full_prompt)
 
             if response:
-                # Store bot's response in memory systems
-                # Create a fake message object for memory storage
                 bot_message = type(
                     "FakeMessage",
                     (),
@@ -192,16 +171,14 @@ class ChatCog(commands.Cog):
                 )
 
                 await short_term_memory.add_message(bot_message)
-
-                # Add to long-term memory buffer
                 await long_term_memory.add_to_buffer(
                     channel_id, f"{self.bot.user.name}: {response}"
                 )
 
-                print(f"Sending response: {response[:100]}...")
+                logger.debug(f"Sending response: {response[:100]}...")
                 await message.channel.send(response)
             else:
-                print("No response generated")
+                logger.warning("No response generated")
                 await message.channel.send(
                     "I apologize, but I couldn't generate a response."
                 )
@@ -219,7 +196,6 @@ class ChatCog(commands.Cog):
             while True:
                 if self._long_term_memory and self._long_term_memory.memory_buffer:
                     for channel_id in list(self._long_term_memory.memory_buffer.keys()):
-                        # Only process if there are actually messages in the buffer
                         if (
                             len(
                                 self._long_term_memory.memory_buffer.get(channel_id, [])
@@ -229,9 +205,7 @@ class ChatCog(commands.Cog):
                             await self._long_term_memory._check_process_memory(
                                 channel_id
                             )
-                await asyncio.sleep(
-                    300
-                )  # Check every 5 minutes instead of every minute
+                await asyncio.sleep(300)
         except asyncio.CancelledError:
             logger.info("Memory processing task cancelled")
         except Exception as e:

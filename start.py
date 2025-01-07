@@ -10,11 +10,7 @@ async def main():
     bot = Bot()
 
     try:
-        # Load services and cogs
-        logger.info("Loading services and cogs...")
-        services, loaded_cogs = await load_all(bot)
-        logger.info(f"Loaded services: {list(services.keys())}")
-        logger.info(f"Loaded cogs: {loaded_cogs}")
+        await load_all(bot)
 
         # Start the bot
         config = get_config()
