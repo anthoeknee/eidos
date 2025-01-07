@@ -5,6 +5,7 @@ from alembic import context
 from src.config import config as app_config  # Import your config
 from src.services.database.models.base import Base
 from src.services.database.models.user import User
+from src.services.database.models.memory import Memory  # Add this line
 # Import other models as needed
 
 # this is the Alembic Config object, which provides

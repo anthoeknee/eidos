@@ -19,20 +19,21 @@ class ChatCog(commands.Cog):
     async def cog_load(self):
         logger.info("Loading ChatCog...")
         try:
-            # Log available services
-            available_services = await self.bot.get_all_services()
-            logger.info(f"Available services: {available_services}")
+            # Get the database service
+            db_service = await self.bot.get_service("database")
+            if not db_service:
+                logger.error("Database service not available")
+                raise RuntimeError("Database service not initialized")
 
             # Get the long-term memory service
             self._long_term_memory = await self.bot.get_service("ai.long_term_memory")
-
             if not self._long_term_memory:
                 logger.error("Long-term memory service returned None")
                 raise RuntimeError("Long-term memory service not initialized")
 
-            logger.info("Successfully retrieved long-term memory service")
+            logger.info("Successfully loaded required services")
 
-            # Instead of creating the task here, we'll start it when the bot is ready
+            # Add the memory task listener
             self.bot.add_listener(self.start_memory_task, "on_ready")
             logger.info("Memory task will start when bot is ready")
 
@@ -132,7 +133,8 @@ class ChatCog(commands.Cog):
             # Get recent conversation context
             messages = await short_term_memory.get_messages(channel_id)
 
-            # Retrieve relevant long-term memories
+            # Retrieve relevant long-term memories with error handling
+            relevant_memories = []
             try:
                 relevant_memories = await long_term_memory.search_memories(
                     channel_id=channel_id,
@@ -141,8 +143,8 @@ class ChatCog(commands.Cog):
                     min_importance=0.6,
                 )
             except Exception as e:
-                logger.warning(f"Error retrieving long-term memories: {e}")
-                relevant_memories = []
+                logger.warning(f"Could not access long-term memories: {e}")
+                # Continue without long-term memories rather than failing completely
 
             # Build enhanced context
             memory_context = ""

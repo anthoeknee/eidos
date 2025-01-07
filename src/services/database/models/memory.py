@@ -12,9 +12,11 @@ class Memory(Base):
     channel_id = Column(String, nullable=False)
     timestamp = Column(DateTime, default=datetime.utcnow, nullable=False)
     content = Column(Text, nullable=False)
-    meta_data = Column(JSONB, nullable=True)  # Changed from metadata to meta_data
-    embedding = Column(Vector, nullable=False)
+    meta_data = Column(JSONB, nullable=True)
+    embedding = Column(Vector(dimensions=1024), nullable=False)
     memory_type = Column(String, nullable=False)
     reference_urls = Column(ARRAY(String), nullable=True)
 
-    # Indexes will be created via Alembic migration
+    __table_args__ = (
+        # Add any indexes here if needed
+    )

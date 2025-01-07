@@ -25,10 +25,6 @@ class AIService:
         if self.config.COHERE_API_KEY:
             self.cohere = CohereAIProvider(api_key=self.config.COHERE_API_KEY)
 
-        # Initialize memory systems
-        self.long_term_memory = LongTermMemory(self.bot)
-        self.short_term_memory = ShortTermMemory()
-
 
 async def setup(bot):
     """Setup function for the AI service."""
@@ -42,10 +38,10 @@ async def setup(bot):
     db_service = await bot.get_service("database")
     cache_service = await bot.get_service("cache")
 
-    # Initialize memory systems
+    # Initialize memory systems with proper dependencies
     logger.info("Initializing memory systems...")
     ai_service.short_term_memory = ShortTermMemory(cache_service)
-    ai_service.long_term_memory = LongTermMemory(db_service, ai_service.cohere)
+    ai_service.long_term_memory = LongTermMemory(db_service, bot)
 
     # Register services with explicit logging
     logger.info("Registering AI services...")
@@ -55,6 +51,8 @@ async def setup(bot):
         bot.services["ai.google"] = ai_service.google_ai
     if ai_service.cohere:
         bot.services["ai.cohere"] = ai_service.cohere
+        # Register Cohere as the embeddings provider
+        bot.services["ai.embeddings"] = ai_service.cohere
     bot.services["ai"] = ai_service
 
     # Log available services

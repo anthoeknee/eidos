@@ -1,6 +1,7 @@
 from typing import Optional, List, Union, Any, Dict
 from pathlib import Path
 import time
+from venv import logger
 import discord
 from google import genai
 from google.genai import types
@@ -8,6 +9,7 @@ import base64
 import cohere
 from discord import Attachment
 import asyncio
+import aiohttp
 
 
 class GoogleAIProvider:
@@ -146,78 +148,100 @@ class GoogleAIProvider:
 
 class CohereAIProvider:
     def __init__(self, api_key: str, model_id: str = "embed-english-v3.0"):
-        self.client = cohere.ClientV2(api_key=api_key)
+        self.client = cohere.AsyncClient(api_key=api_key)
         self.model_id = model_id
+
+    async def get_embedding(
+        self, content: Union[str, Union[Path, Attachment]], content_type: str = "text"
+    ) -> List[float]:
+        """Get embedding for either text or image input."""
+        try:
+            if content_type == "text":
+                response = await self.client.embed(
+                    texts=[content],
+                    model=self.model_id,
+                    input_type="search_document",
+                    embedding_types=["float"],
+                )
+                return response.embeddings.float[0]
+
+            elif content_type == "image":
+                if isinstance(content, str):  # URL
+                    async with aiohttp.ClientSession() as session:
+                        async with session.get(content) as resp:
+                            image_data = await resp.read()
+                            content_type = resp.headers["Content-Type"]
+                elif isinstance(content, Attachment):
+                    image_data = await content.read()
+                    content_type = content.content_type
+                elif isinstance(content, Path):
+                    image_data = content.read_bytes()
+                    content_type = "image/jpeg"
+                else:
+                    raise ValueError(f"Unsupported image source type: {type(content)}")
+
+                stringified_buffer = base64.b64encode(image_data).decode("utf-8")
+                image_base64 = f"data:{content_type};base64,{stringified_buffer}"
+
+                response = await self.client.embed(
+                    model=self.model_id,
+                    input_type="image",
+                    embedding_types=["float"],
+                    images=[image_base64],
+                )
+                return response.embeddings.float[0]
+
+        except Exception as e:
+            logger.error(f"Error generating embedding: {str(e)}")
+            raise ValueError(f"Error generating embedding: {str(e)}")
 
     async def generate(
         self,
         inputs: Union[List[str], List[Union[Path, Attachment]]],
-        input_type: str = "auto",
+        input_type: str = "search_document",
         embedding_types: Optional[List[str]] = None,
         truncate: str = "END",
         return_raw: bool = False,
-    ) -> Union[Dict[str, Any], Any]:
-        """
-        Unified method to generate embeddings for text or images.
-        Returns either the raw response object or just the embedding data.
-        """
+    ) -> Union[Dict[str, Any], List[List[float]]]:
+        """Generate embeddings for multiple inputs."""
         if embedding_types is None:
             embedding_types = ["float"]
 
-        if input_type == "auto":
-            if isinstance(inputs[0], str):
-                input_type = "search_document"
-            elif isinstance(inputs[0], (Path, Attachment)):
-                input_type = "image"
-            else:
-                raise ValueError(f"Unsupported input type: {type(inputs[0])}")
-
-        if input_type == "search_document":
-            try:
-                response = await asyncio.to_thread(
-                    self.client.embed,
+        try:
+            if input_type == "search_document":
+                response = await self.client.embed(
                     texts=inputs,
-                    model="embed-english-v3.0",
-                    input_type="search_query",
-                    embedding_types=["float"],
-                    truncate="END",
+                    model=self.model_id,
+                    input_type=input_type,
+                    embedding_types=embedding_types,
+                    truncate=truncate,
                 )
-                # Access embeddings correctly based on Cohere's V3 response structure
-                return response.embeddings.float[0] if not return_raw else response
-            except Exception as e:
-                raise ValueError(f"Error generating text embeddings: {e}")
+                return response if return_raw else response.embeddings.float
 
-        elif input_type == "image":
-            image_base64_list = []
-            for image in inputs:
-                if isinstance(image, Attachment):
-                    image_data = await image.read()
+            elif input_type == "image":
+                image_base64_list = []
+                for image in inputs:
+                    if isinstance(image, Attachment):
+                        image_data = await image.read()
+                        content_type = image.content_type
+                    elif isinstance(image, Path):
+                        image_data = image.read_bytes()
+                        content_type = "image/jpeg"
+                    else:
+                        raise ValueError(f"Unsupported image type: {type(image)}")
+
                     stringified_buffer = base64.b64encode(image_data).decode("utf-8")
-                    content_type = image.content_type
                     image_base64 = f"data:{content_type};base64,{stringified_buffer}"
                     image_base64_list.append(image_base64)
-                elif isinstance(image, Path):
-                    with open(image, "rb") as f:
-                        image_data = f.read()
-                        stringified_buffer = base64.b64encode(image_data).decode(
-                            "utf-8"
-                        )
-                        content_type = "image/jpeg"  # Default to jpeg, can be improved
-                        image_base64 = (
-                            f"data:{content_type};base64,{stringified_buffer}"
-                        )
-                        image_base64_list.append(image_base64)
-                else:
-                    raise ValueError(f"Unsupported image type: {type(image)}")
-            try:
+
                 response = await self.client.embed(
                     model=self.model_id,
                     input_type="image",
                     embedding_types=embedding_types,
                     images=image_base64_list,
                 )
-            except Exception as e:
-                raise ValueError(f"Error generating image embeddings: {e}")
-            return response if return_raw else response.embeddings
-        else:
-            raise ValueError(f"Unsupported input type: {input_type}")
+                return response if return_raw else response.embeddings.float
+
+        except Exception as e:
+            logger.error(f"Error generating embeddings: {str(e)}")
+            raise ValueError(f"Error generating embeddings: {str(e)}")

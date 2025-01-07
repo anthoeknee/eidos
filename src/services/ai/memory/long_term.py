@@ -3,6 +3,11 @@ from datetime import datetime, timedelta
 import logging
 from sqlalchemy import text
 from dataclasses import dataclass
+from src.services.database.queries.context_tag import get_or_create_tags
+import json
+from src.services.ai.memory.nlp import NLP
+from src.services.ai.providers import CohereAIProvider
+from src.config import get_config
 
 logger = logging.getLogger(__name__)
 
@@ -22,7 +27,8 @@ class Memory:
 
 
 class LongTermMemory:
-    def __init__(self, bot):
+    def __init__(self, db_service, bot):
+        self.db = db_service
         self.bot = bot
         self.memory_buffer = {}
         self.last_processed = {}
@@ -33,6 +39,10 @@ class LongTermMemory:
             "important": 0.8,
             "image": 0.6,
         }
+        self.nlp = NLP()
+        self.processing_task = None
+        self.config = get_config()
+        self.embeddings = CohereAIProvider(self.config.COHERE_API_KEY)
 
     async def add_to_buffer(self, channel_id: str, content: str):
         """Add a message to the memory buffer."""
@@ -76,25 +86,23 @@ class LongTermMemory:
                 return
 
             memory_text = "\n".join(messages)
-
-            # Generate embeddings
-            embeddings = await self.cohere.generate(
-                inputs=[memory_text], input_type="search_document"
+            embeddings = await self.embeddings.get_embedding(
+                content=memory_text, content_type="text"
             )
 
             if not embeddings:
                 logger.error(f"Failed to generate embeddings for channel {channel_id}")
                 return
 
-            # Analyze importance
             importance_score = await self._analyze_importance(memory_text)
             memory_type = "important" if importance_score > 0.8 else "conversation"
 
-            # Create memory object
+            embedding_array = f"{{{','.join(str(x) for x in embeddings)}}}"
+
             memory = Memory(
                 channel_id=channel_id,
                 content=memory_text,
-                embedding=embeddings[0],
+                embedding=embeddings,
                 memory_type=memory_type,
                 metadata={
                     "message_count": len(messages),
@@ -104,22 +112,25 @@ class LongTermMemory:
                 },
             )
 
-            # Store in database
-            await self.db.execute(
-                """
-                INSERT INTO memories (channel_id, content, embedding, memory_type, metadata)
-                VALUES (:channel_id, :content, :embedding, :memory_type, :metadata)
-                """,
-                {
-                    "channel_id": memory.channel_id,
-                    "content": memory.content,
-                    "embedding": memory.embedding,
-                    "memory_type": memory.memory_type,
-                    "metadata": memory.metadata,
-                },
-            )
+            # Updated column name in the INSERT statement
+            with self.db.session() as session:
+                session.execute(
+                    text("""
+                    INSERT INTO memories (channel_id, content, embedding, memory_type, meta_data)
+                    VALUES (:channel_id, :content, :embedding::vector, :memory_type, :meta_data::jsonb)
+                    """),
+                    {
+                        "channel_id": memory.channel_id,
+                        "content": memory.content,
+                        "embedding": embedding_array,
+                        "memory_type": memory.memory_type,
+                        "meta_data": json.dumps(
+                            memory.metadata
+                        ),  # Note: we pass as metadata but column is meta_data
+                    },
+                )
+                session.commit()
 
-            # Clear buffer and update last processed time
             self.memory_buffer[channel_id] = []
             self.last_processed[channel_id] = datetime.utcnow()
 
@@ -135,36 +146,50 @@ class LongTermMemory:
     ) -> List[Dict[str, Any]]:
         """Search for relevant memories using vector similarity."""
         try:
-            # Get embedding for the query
-            query_embedding = await self._get_embedding(query)
-
-            # SQL query using vector similarity
-            query = """
-            SELECT content, metadata, embedding <=> $1 as distance
-            FROM memories
-            WHERE channel_id = $2
-            AND metadata->>'importance_score' >= $3
-            ORDER BY embedding <=> $1
-            LIMIT $4
-            """
-
-            # Execute query with parameters
-            results = await self.db.execute_query(
-                query, query_embedding, channel_id, str(min_importance), limit
+            query_embedding = await self.embeddings.get_embedding(
+                content=query, content_type="text"
             )
+            if query_embedding is None:
+                logger.error("Failed to generate query embedding")
+                return []
 
-            # Format results
-            memories = []
-            async for row in results:
-                memories.append(
+            embedding_array = f"[{','.join(str(x) for x in query_embedding)}]"
+
+            with self.db.session() as session:
+                stmt = text("""
+                    SELECT
+                        content,
+                        meta_data,
+                        1 - (embedding <-> :embedding) as similarity
+                    FROM memories
+                    WHERE channel_id = :channel_id
+                    AND (meta_data->>'importance_score')::float >= :importance
+                    ORDER BY embedding <-> :embedding
+                    LIMIT :limit_val
+                """)
+
+                result = session.execute(
+                    stmt,
                     {
-                        "content": row["content"],
-                        "metadata": row["metadata"],
-                        "distance": row["distance"],
-                    }
+                        "embedding": embedding_array,
+                        "channel_id": channel_id,
+                        "importance": min_importance,
+                        "limit_val": limit,
+                    },
                 )
 
-            return memories
+                memories = []
+                for row in result:
+                    metadata = json.loads(row.meta_data) if row.meta_data else {}
+                    memories.append(
+                        {
+                            "content": row.content,
+                            "metadata": metadata,
+                            "similarity": float(row.similarity),
+                        }
+                    )
+
+                return memories
 
         except Exception as e:
             logger.error(f"Error searching memories: {e}", exc_info=True)
@@ -180,3 +205,84 @@ class LongTermMemory:
         except Exception as e:
             logger.error(f"Error generating embedding: {e}")
             raise
+
+    async def _analyze_importance(self, memory_text: str) -> float:
+        """Analyze the importance of a memory using the NLP service."""
+        try:
+            return await self.nlp.analyze_importance(memory_text)
+        except Exception as e:
+            logger.error(f"Error analyzing importance: {e}")
+            return 0.0  # Default to low importance on error
+
+    async def _extract_context_tags(self, memory_text: str) -> List[str]:
+        """Extract context tags from the memory text using the NLP service."""
+        try:
+            tags = await self.nlp.extract_context_tags(memory_text)
+            await self._store_context_tags(tags)
+            return tags
+        except Exception as e:
+            logger.error(f"Error extracting or storing context tags: {e}")
+            return []
+
+    async def _store_context_tags(self, tags: List[str]):
+        """Store the extracted context tags in the database."""
+        try:
+            with self.db.session() as session:
+                # Use the new get_or_create_tags function
+                get_or_create_tags(session, tags)
+                # No need to commit here, as get_or_create_tags handles it
+
+        except Exception as e:
+            logger.error(f"Error storing context tags in database: {e}")
+            raise
+
+    async def store_image_memory(
+        self,
+        channel_id: str,
+        image_url: str,
+        description: str,
+        metadata: Dict[str, Any] = None,
+    ) -> bool:
+        """Store an image-related memory."""
+        try:
+            # Generate embedding for the image description
+            embedding = await self.embeddings.get_embedding(
+                content=description, content_type="text"
+            )
+
+            if not embedding:
+                logger.error("Failed to generate embedding for image memory")
+                return False
+
+            # Format embedding array for PostgreSQL
+            embedding_array = f"{{{','.join(str(x) for x in embedding)}}}"
+
+            # Prepare metadata
+            full_metadata = {
+                "image_url": image_url,
+                "timestamp": datetime.utcnow().isoformat(),
+                "importance_score": 0.7,  # Default importance for images
+                **(metadata or {}),
+            }
+
+            # Store in database
+            with self.db.session() as session:
+                session.execute(
+                    text("""
+                    INSERT INTO memories (channel_id, content, embedding, memory_type, metadata)
+                    VALUES (:channel_id, :content, :embedding::vector, :memory_type, :metadata::jsonb)
+                    """),
+                    {
+                        "channel_id": channel_id,
+                        "content": description,
+                        "embedding": embedding_array,
+                        "memory_type": "image",
+                        "metadata": json.dumps(full_metadata),
+                    },
+                )
+                session.commit()
+                return True
+
+        except Exception as e:
+            logger.error(f"Error storing image memory: {e}", exc_info=True)
+            return False

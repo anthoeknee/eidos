@@ -1,4 +1,4 @@
-from typing import Type, TypeVar, List, Optional
+from typing import Type, TypeVar, List, Optional, Tuple
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import SQLAlchemyError
 from src.services.database.models.base import BaseModel
@@ -73,3 +73,29 @@ def delete(session: Session, model: Type[ModelType], id: int) -> bool:
         logger.error(f"Error deleting {model.__name__} with ID {id}: {e}")
         session.rollback()
         return False
+
+
+def get_or_create(
+    session: Session, model: Type[ModelType], defaults: dict = None, **kwargs
+) -> Tuple[ModelType, bool]:
+    """
+    Get an existing record or create a new one if it doesn't exist.
+
+    Args:
+        session: The database session.
+        model: The model class.
+        defaults: A dictionary of default values for creating a new record.
+        **kwargs: Keyword arguments to identify the record.
+
+    Returns:
+        A tuple containing the record (existing or new) and a boolean indicating whether a new record was created.
+    """
+    instance = session.query(model).filter_by(**kwargs).first()
+    if instance:
+        return instance, False
+    else:
+        kwargs.update(defaults or {})
+        instance = model(**kwargs)
+        session.add(instance)
+        session.commit()
+        return instance, True

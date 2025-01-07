@@ -887,3 +887,621 @@ LINE 1: INSERT INTO alembic_version (version_num) VALUES ('5af010037...
 [2025-01-06 06:48:52] [INFO] Redis cache service initialized successfully
 [2025-01-06 06:49:22] [INFO] Redis cache service initialized successfully
 [2025-01-06 06:49:54] [INFO] Redis cache service initialized successfully
+[2025-01-06 16:56:29] [INFO] Starting PostgreSQL Database Setup...
+[2025-01-06 16:56:30] [INFO] Checking database status...
+[2025-01-06 16:56:30] [INFO] Database is up to date, skipping migrations
+[2025-01-06 16:56:36] [ERROR] Session error: (psycopg2.errors.UndefinedTable) relation "memories" does not exist
+LINE 3:                     FROM memories
+                                 ^
+
+[SQL: 
+                    SELECT content, metadata, embedding <=> %(query_embedding)s as distance
+                    FROM memories
+                    WHERE channel_id = %(channel_id)s
+                    AND metadata->>'importance_score' >= %(min_importance)s
+                    ORDER BY embedding <=> %(query_embedding)s
+                    LIMIT %(limit)s
+                    ]
+[parameters: {'query_embedding': [0.0046310425, 0.0001180768, -0.02381897, -0.06677246, 0.0006699562, -0.01259613, -0.032562256, 0.0045166016, 0.010093689, 0.06994629, -0.033355713, - ... (13443 characters truncated) ... 529, -0.04019165, 0.012771606, -0.03010559, 0.0004892349, -0.04321289, 0.022964478, -0.043884277, -0.031433105, 0.019714355, -0.015144348, 0.03062439], 'channel_id': '1319009340937601075', 'min_importance': '0.6', 'limit': 3}]
+(Background on this error at: https://sqlalche.me/e/20/f405)
+[2025-01-06 16:59:55] [INFO] Starting PostgreSQL Database Setup...
+[2025-01-06 16:59:56] [INFO] Checking database status...
+[2025-01-06 16:59:57] [INFO] Database needs upgrade: d815daab461e -> e8dfe94ef331
+[2025-01-06 16:59:57] [INFO] Running migrations...
+[2025-01-06 16:59:59] [ERROR] Migration failed: name 'src' is not defined
+[2025-01-06 16:59:59] [ERROR] ❌ Database setup failed: name 'src' is not defined
+[2025-01-06 17:03:42] [INFO] Starting PostgreSQL Database Setup...
+[2025-01-06 17:03:43] [INFO] Checking database status...
+[2025-01-06 17:03:44] [INFO] Database needs upgrade: d815daab461e -> e8dfe94ef331
+[2025-01-06 17:03:44] [INFO] Running migrations...
+[2025-01-06 17:03:46] [INFO] Database migrations completed successfully
+[2025-01-06 17:03:46] [INFO] PostgreSQL Database Setup Complete!
+[2025-01-06 17:04:10] [ERROR] Session error: (psycopg2.errors.UndefinedFunction) operator does not exist: double precision[] <=> numeric[]
+LINE 2: ...              SELECT content, metadata, embedding <=> ARRAY[...
+                                                             ^
+HINT:  No operator matches the given name and argument types. You might need to add explicit type casts.
+
+[SQL: 
+                    SELECT content, metadata, embedding <=> %(query_embedding)s as distance
+                    FROM memories
+                    WHERE channel_id = %(channel_id)s
+                    AND metadata->>'importance_score' >= %(min_importance)s
+                    ORDER BY embedding <=> %(query_embedding)s
+                    LIMIT %(limit)s
+                    ]
+[parameters: {'query_embedding': [0.0066871643, 0.017318726, -0.012214661, -0.06402588, 0.005958557, -0.0033664703, -0.05239868, -0.017044067, 0.008323669, 0.047943115, -0.03704834, 0 ... (13503 characters truncated) ...  -0.025787354, 0.0015735626, -0.026031494, -0.00283432, -0.031677246, 0.010658264, -0.047851562, -0.03265381, 0.0052261353, -0.012496948, 0.019363403], 'channel_id': '1319009340937601075', 'min_importance': '0.6', 'limit': 3}]
+(Background on this error at: https://sqlalche.me/e/20/f405)
+[2025-01-06 17:06:04] [INFO] Starting PostgreSQL Database Setup...
+[2025-01-06 17:06:05] [INFO] Checking database status...
+[2025-01-06 17:06:05] [INFO] Database is up to date, skipping migrations
+[2025-01-06 17:06:15] [ERROR] Session error: (psycopg2.errors.UndefinedFunction) operator does not exist: double precision[] <=> numeric[]
+LINE 2: ...              SELECT content, metadata, embedding <=> ARRAY[...
+                                                             ^
+HINT:  No operator matches the given name and argument types. You might need to add explicit type casts.
+
+[SQL: 
+                    SELECT content, metadata, embedding <=> %(query_embedding)s as distance
+                    FROM memories
+                    WHERE channel_id = %(channel_id)s
+                    AND metadata->>'importance_score' >= %(min_importance)s
+                    ORDER BY embedding <=> %(query_embedding)s
+                    LIMIT %(limit)s
+                    ]
+[parameters: {'query_embedding': [0.0066871643, 0.017318726, -0.012214661, -0.06402588, 0.005958557, -0.0033664703, -0.05239868, -0.017044067, 0.008323669, 0.047943115, -0.03704834, 0 ... (13503 characters truncated) ...  -0.025787354, 0.0015735626, -0.026031494, -0.00283432, -0.031677246, 0.010658264, -0.047851562, -0.03265381, 0.0052261353, -0.012496948, 0.019363403], 'channel_id': '1319009340937601075', 'min_importance': '0.6', 'limit': 3}]
+(Background on this error at: https://sqlalche.me/e/20/f405)
+[2025-01-06 17:12:12] [INFO] Starting PostgreSQL Database Setup...
+[2025-01-06 17:12:14] [INFO] Checking database status...
+[2025-01-06 17:12:14] [INFO] Database is up to date, skipping migrations
+[2025-01-06 17:14:01] [INFO] Starting PostgreSQL Database Setup...
+[2025-01-06 17:14:02] [INFO] Checking database status...
+[2025-01-06 17:14:02] [INFO] Database is up to date, skipping migrations
+[2025-01-06 17:14:05] [ERROR] Session error: 'EmbedByTypeResponseEmbeddings' object is not subscriptable
+[2025-01-06 17:14:54] [INFO] Starting PostgreSQL Database Setup...
+[2025-01-06 17:14:55] [INFO] Checking database status...
+[2025-01-06 17:14:56] [INFO] Database is up to date, skipping migrations
+[2025-01-06 17:14:58] [ERROR] Session error: 'EmbedByTypeResponseEmbeddings' object is not subscriptable
+[2025-01-06 17:15:46] [ERROR] Session error: 'EmbedByTypeResponseEmbeddings' object is not subscriptable
+[2025-01-06 17:15:51] [ERROR] Session error: 'EmbedByTypeResponseEmbeddings' object is not subscriptable
+[2025-01-06 17:20:46] [INFO] Starting PostgreSQL Database Setup...
+[2025-01-06 17:20:47] [INFO] Checking database status...
+[2025-01-06 17:20:47] [INFO] Database is up to date, skipping migrations
+[2025-01-06 17:20:50] [ERROR] Session error: (psycopg2.errors.SyntaxError) syntax error at or near ":"
+LINE 2: ...     SELECT content, metadata, 1 - (embedding <=> :query_emb...
+                                                             ^
+
+[SQL: 
+                        SELECT content, metadata, 1 - (embedding <=> :query_embedding::vector) as similarity
+                        FROM memories
+                        WHERE channel_id = %(channel_id)s
+                        AND (metadata->>'importance_score')::float >= %(min_importance)s
+                        ORDER BY embedding <=> :query_embedding::vector
+                        LIMIT %(limit)s
+                    ]
+[parameters: {'channel_id': '1319009340937601075', 'min_importance': 0.6, 'limit': 3}]
+(Background on this error at: https://sqlalche.me/e/20/f405)
+[2025-01-06 17:24:12] [INFO] Starting PostgreSQL Database Setup...
+[2025-01-06 17:24:13] [INFO] Checking database status...
+[2025-01-06 17:24:13] [INFO] Database is up to date, skipping migrations
+[2025-01-06 17:28:20] [INFO] Starting PostgreSQL Database Setup...
+[2025-01-06 17:28:21] [INFO] Checking database status...
+[2025-01-06 17:28:22] [INFO] Database is up to date, skipping migrations
+[2025-01-06 18:35:54] [INFO] Starting PostgreSQL Database Setup...
+[2025-01-06 18:35:55] [INFO] Checking database status...
+[2025-01-06 18:35:55] [INFO] Database needs upgrade: e8dfe94ef331 -> adf0ead2e276
+[2025-01-06 18:35:55] [INFO] Running migrations...
+[2025-01-06 18:35:57] [INFO] Database migrations completed successfully
+[2025-01-06 18:35:58] [INFO] PostgreSQL Database Setup Complete!
+[2025-01-06 18:51:08] [ERROR] Session error: (psycopg2.ProgrammingError) can't adapt type 'dict'
+[SQL: 
+                    INSERT INTO memories (channel_id, content, embedding, memory_type, metadata)
+                    VALUES (%(channel_id)s, %(content)s, %(embedding)s, %(memory_type)s, %(metadata)s)
+                    ]
+[parameters: {'channel_id': '1319009340937601075', 'content': 'Eidos: Hello there! How can I assist you today?\nEidos: I am a multi-modal AI language model, designed to assist and provide information to users. I  ... (455 characters truncated) ... polite.\nEidos: That\'s not very nice. Please be respectful.\nEidos: I am not sure what you are trying to ask. Can you please rephrase your question?', 'embedding': [-0.01727295, 0.013023376, -0.066101074, -0.01524353, -0.008171082, -0.011100769, -0.044433594, 0.016860962, 0.07208252, 0.041625977, -0.079589844, -0 ... (13464 characters truncated) ... , 0.0025119781, 0.03253174, -0.013183594, 0.028869629, -0.015701294, 0.058624268, 0.012901306, -0.023117065, -0.013839722, 0.0031833649, 0.0016527176], 'memory_type': 'conversation', 'metadata': {'message_count': 9, 'timestamp': '2025-01-07T02:51:02.938958', 'importance_score': 0.0, 'context_tags': ['multi-modal ai', 'language model', 'assista ... (21 characters truncated) ... answering questions', 'summarizing', 'text generation', 'language translation', 'user support', 'respectful communication', 'kindness', 'politeness']}}]
+(Background on this error at: https://sqlalche.me/e/20/f405)
+[2025-01-06 18:56:13] [ERROR] Session error: (psycopg2.ProgrammingError) can't adapt type 'dict'
+[SQL: 
+                    INSERT INTO memories (channel_id, content, embedding, memory_type, metadata)
+                    VALUES (%(channel_id)s, %(content)s, %(embedding)s, %(memory_type)s, %(metadata)s)
+                    ]
+[parameters: {'channel_id': '1319009340937601075', 'content': 'Eidos: Hello there! How can I assist you today?\nEidos: I am a multi-modal AI language model, designed to assist and provide information to users. I  ... (455 characters truncated) ... polite.\nEidos: That\'s not very nice. Please be respectful.\nEidos: I am not sure what you are trying to ask. Can you please rephrase your question?', 'embedding': [-0.01725769, 0.013015747, -0.066101074, -0.01524353, -0.008178711, -0.011108398, -0.044433594, 0.016860962, 0.07208252, 0.041625977, -0.079589844, -0 ... (13462 characters truncated) ... 6, 0.0025100708, 0.03253174, -0.013183594, 0.028869629, -0.015701294, 0.058624268, 0.012901306, -0.023117065, -0.013839722, 0.003189087, 0.0016508102], 'memory_type': 'conversation', 'metadata': {'message_count': 9, 'timestamp': '2025-01-07T02:56:10.159335', 'importance_score': 0.1, 'context_tags': ['multi-modal ai', 'language model', 'nlp', ' ... (13 characters truncated) ... age processing', 'question answering', 'summarization', 'text generation', 'language translation', 'respectful communication', 'polite conversation']}}]
+(Background on this error at: https://sqlalche.me/e/20/f405)
+[2025-01-06 19:10:33] [INFO] Starting PostgreSQL Database Setup...
+[2025-01-06 19:10:34] [INFO] Checking database status...
+[2025-01-06 19:10:34] [INFO] Database is up to date, skipping migrations
+[2025-01-06 19:12:09] [INFO] Starting PostgreSQL Database Setup...
+[2025-01-06 19:12:10] [INFO] Checking database status...
+[2025-01-06 19:12:10] [INFO] Database is up to date, skipping migrations
+[2025-01-06 19:12:44] [INFO] Starting PostgreSQL Database Setup...
+[2025-01-06 19:12:45] [INFO] Checking database status...
+[2025-01-06 19:12:45] [INFO] Database is up to date, skipping migrations
+[2025-01-06 19:14:15] [INFO] Starting PostgreSQL Database Setup...
+[2025-01-06 19:14:16] [INFO] Checking database status...
+[2025-01-06 19:14:16] [INFO] Database is up to date, skipping migrations
+[2025-01-06 19:14:20] [ERROR] Session error: 'float' object is not iterable
+[2025-01-06 19:15:01] [INFO] Starting PostgreSQL Database Setup...
+[2025-01-06 19:15:02] [INFO] Checking database status...
+[2025-01-06 19:15:02] [INFO] Database is up to date, skipping migrations
+[2025-01-06 19:15:05] [ERROR] Session error: (psycopg2.errors.SyntaxError) syntax error at or near ":"
+LINE 2: ...     SELECT content, metadata, 1 - (embedding <=> :query_emb...
+                                                             ^
+
+[SQL: 
+                        SELECT content, metadata, 1 - (embedding <=> :query_embedding::vector) as similarity
+                        FROM memories
+                        WHERE channel_id = %(channel_id)s
+                        AND (metadata->>'importance_score')::float >= %(min_importance)s
+                        ORDER BY embedding <=> :query_embedding::vector
+                        LIMIT %(limit)s
+                    ]
+[parameters: {'channel_id': '1319009340937601075', 'min_importance': 0.6, 'limit': 3}]
+(Background on this error at: https://sqlalche.me/e/20/f405)
+[2025-01-06 19:16:07] [INFO] Starting PostgreSQL Database Setup...
+[2025-01-06 19:16:08] [INFO] Checking database status...
+[2025-01-06 19:16:08] [INFO] Database is up to date, skipping migrations
+[2025-01-06 19:16:14] [ERROR] Session error: (psycopg2.errors.UndefinedObject) type "vector" does not exist
+LINE 2: ...16537,-0.00095176697,-0.028778076,0.027542114]')::vector) as...
+                                                             ^
+
+[SQL: 
+                        SELECT content, metadata, 1 - (embedding <=> (%(query_embedding)s)::vector) as similarity
+                        FROM memories
+                        WHERE channel_id = %(channel_id)s
+                        AND (metadata->>'importance_score')::float >= %(min_importance)s
+                        ORDER BY embedding <=> (%(query_embedding)s)::vector
+                        LIMIT %(limit)s
+                        ]
+[parameters: {'query_embedding': '[-0.015792847,-0.018218994,-0.023712158,-0.05960083,-0.019485474,-0.0076942444,-0.015266418,0.036346436,-0.0074310303,0.08782959,-0.0036678314,-0.011 ... (12450 characters truncated) ... 45166,-0.0004916191,0.03717041,-0.023101807,-0.014213562,-0.028137207,-0.011871338,-0.03277588,-0.0019216537,-0.00095176697,-0.028778076,0.027542114]', 'channel_id': '1319009340937601075', 'min_importance': 0.6, 'limit': 3}]
+(Background on this error at: https://sqlalche.me/e/20/f405)
+[2025-01-06 19:29:36] [INFO] Starting PostgreSQL Database Setup...
+[2025-01-06 19:29:37] [INFO] Checking database status...
+[2025-01-06 19:29:37] [INFO] Database needs upgrade: None -> 4ebf055f29e5
+[2025-01-06 19:29:37] [INFO] Running migrations...
+[2025-01-06 19:29:39] [ERROR] Migration failed: name 'src' is not defined
+[2025-01-06 19:29:40] [ERROR] ❌ Database setup failed: name 'src' is not defined
+[2025-01-06 19:31:54] [INFO] Starting PostgreSQL Database Setup...
+[2025-01-06 19:31:55] [INFO] Checking database status...
+[2025-01-06 19:31:55] [INFO] Database needs upgrade: None -> 4ebf055f29e5
+[2025-01-06 19:31:55] [INFO] Running migrations...
+[2025-01-06 19:31:57] [INFO] Database migrations completed successfully
+[2025-01-06 19:31:57] [INFO] PostgreSQL Database Setup Complete!
+[2025-01-06 19:32:04] [ERROR] Session error: (psycopg2.errors.UndefinedColumn) column "metadata" does not exist
+LINE 2:                         SELECT content, metadata, 1 - (embed...
+                                                ^
+HINT:  Perhaps you meant to reference the column "memories.meta_data".
+
+[SQL: 
+                        SELECT content, metadata, 1 - (embedding <=> (%(query_embedding)s)::vector) as similarity
+                        FROM memories
+                        WHERE channel_id = %(channel_id)s
+                        AND (metadata->>'importance_score')::float >= %(min_importance)s
+                        ORDER BY embedding <=> (%(query_embedding)s)::vector
+                        LIMIT %(limit)s
+                        ]
+[parameters: {'query_embedding': '[0.014854431,-0.012130737,0.0018177032,-0.07299805,-0.02279663,0.006378174,-0.04058838,-0.0053749084,0.010147095,0.07324219,0.0069122314,-0.01007843, ... (12463 characters truncated) ... .009483337,-0.010124207,0.07763672,-0.02720642,-0.005683899,-0.046691895,0.0038967133,-0.070373535,0.014892578,0.0033245087,-0.009666443,0.041625977]', 'channel_id': '1319009340937601075', 'min_importance': 0.6, 'limit': 3}]
+(Background on this error at: https://sqlalche.me/e/20/f405)
+[2025-01-06 19:33:54] [INFO] Starting PostgreSQL Database Setup...
+[2025-01-06 19:33:56] [INFO] Checking database status...
+[2025-01-06 19:33:56] [INFO] Database is up to date, skipping migrations
+[2025-01-06 19:34:03] [ERROR] Session error: (psycopg2.errors.UndefinedFunction) operator does not exist: text <=> vector
+LINE 2: ...        SELECT content, meta_data, 1 - (embedding <=> ('[0.0...
+                                                             ^
+HINT:  No operator matches the given name and argument types. You might need to add explicit type casts.
+
+[SQL: 
+                        SELECT content, meta_data, 1 - (embedding <=> (%(query_embedding)s)::vector) as similarity
+                        FROM memories
+                        WHERE channel_id = %(channel_id)s
+                        AND (meta_data->>'importance_score')::float >= %(min_importance)s
+                        ORDER BY embedding <=> (%(query_embedding)s)::vector
+                        LIMIT %(limit)s
+                        ]
+[parameters: {'query_embedding': '[0.0066871643,0.017318726,-0.012214661,-0.06402588,0.005958557,-0.0033664703,-0.05239868,-0.017044067,0.008323669,0.047943115,-0.03704834,0.000152230 ... (12482 characters truncated) ... 031951904,-0.025787354,0.0015735626,-0.026031494,-0.00283432,-0.031677246,0.010658264,-0.047851562,-0.03265381,0.0052261353,-0.012496948,0.019363403]', 'channel_id': '1319009340937601075', 'min_importance': 0.6, 'limit': 3}]
+(Background on this error at: https://sqlalche.me/e/20/f405)
+[2025-01-06 19:34:55] [INFO] Starting PostgreSQL Database Setup...
+[2025-01-06 19:34:56] [INFO] Checking database status...
+[2025-01-06 19:34:56] [INFO] Database is up to date, skipping migrations
+[2025-01-06 19:35:03] [ERROR] Session error: (psycopg2.errors.SyntaxError) syntax error at or near ":"
+LINE 5: ...                       1 - (embedding::vector <-> :query_emb...
+                                                             ^
+
+[SQL: 
+                        SELECT
+                            content,
+                            meta_data,
+                            1 - (embedding::vector <-> :query_embedding::vector) as similarity
+                        FROM memories
+                        WHERE channel_id = %(channel_id)s
+                        AND (meta_data->>'importance_score')::float >= %(min_importance)s
+                        ORDER BY embedding::vector <-> :query_embedding::vector
+                        LIMIT %(limit)s
+                    ]
+[parameters: {'channel_id': '1319009340937601075', 'min_importance': 0.6, 'limit': 3}]
+(Background on this error at: https://sqlalche.me/e/20/f405)
+[2025-01-06 19:35:37] [INFO] Starting PostgreSQL Database Setup...
+[2025-01-06 19:35:38] [INFO] Checking database status...
+[2025-01-06 19:35:39] [INFO] Database is up to date, skipping migrations
+[2025-01-06 19:35:44] [ERROR] Session error: (psycopg2.errors.SyntaxError) syntax error at or near "%"
+LINE 5: ...                       1 - (embedding::vector <-> %(query_em...
+                                                             ^
+
+[SQL: 
+                        SELECT
+                            content,
+                            meta_data,
+                            1 - (embedding::vector <-> %%(query_embedding)s::vector) as similarity
+                        FROM memories
+                        WHERE channel_id = %%(channel_id)s
+                        AND (meta_data->>'importance_score')::float >= %%(min_importance)s
+                        ORDER BY embedding::vector <-> %%(query_embedding)s::vector
+                        LIMIT %%(limit)s
+                    ]
+(Background on this error at: https://sqlalche.me/e/20/f405)
+[2025-01-06 19:37:12] [INFO] Starting PostgreSQL Database Setup...
+[2025-01-06 19:37:13] [INFO] Checking database status...
+[2025-01-06 19:37:13] [INFO] Database is up to date, skipping migrations
+[2025-01-06 19:37:17] [ERROR] Session error: (psycopg2.errors.SyntaxError) syntax error at or near ":"
+LINE 5: ...                       1 - (embedding::vector <-> :query_emb...
+                                                             ^
+
+[SQL: 
+                        SELECT
+                            content,
+                            meta_data,
+                            1 - (embedding::vector <-> :query_embedding::vector) as similarity
+                        FROM memories
+                        WHERE channel_id = %(channel_id)s
+                        AND (meta_data->>'importance_score')::float >= %(min_importance)s
+                        ORDER BY embedding::vector <-> :query_embedding::vector
+                        LIMIT %(limit)s
+                    ]
+[parameters: {'channel_id': '1319009340937601075', 'min_importance': 0.6, 'limit': 3}]
+(Background on this error at: https://sqlalche.me/e/20/f405)
+[2025-01-06 19:38:20] [INFO] Starting PostgreSQL Database Setup...
+[2025-01-06 19:38:21] [INFO] Checking database status...
+[2025-01-06 19:38:22] [INFO] Database is up to date, skipping migrations
+[2025-01-06 19:38:25] [ERROR] Session error: (psycopg2.errors.SyntaxError) syntax error at or near ":"
+LINE 3:                             SELECT :query_embedding::vector ...
+                                           ^
+
+[SQL: 
+                        WITH query_embedding AS (
+                            SELECT :query_embedding::vector AS vec
+                        )
+                        SELECT
+                            content,
+                            meta_data,
+                            1 - (embedding::vector <-> query_embedding.vec) as similarity
+                        FROM memories, query_embedding
+                        WHERE channel_id = %(channel_id)s
+                        AND (meta_data->>'importance_score')::float >= %(min_importance)s
+                        ORDER BY embedding::vector <-> query_embedding.vec
+                        LIMIT %(limit)s
+                    ]
+[parameters: {'channel_id': '1319009340937601075', 'min_importance': 0.6, 'limit': 3}]
+(Background on this error at: https://sqlalche.me/e/20/f405)
+[2025-01-06 19:39:19] [INFO] Starting PostgreSQL Database Setup...
+[2025-01-06 19:39:21] [INFO] Checking database status...
+[2025-01-06 19:39:21] [INFO] Database is up to date, skipping migrations
+[2025-01-06 19:39:24] [ERROR] Session error: (psycopg2.errors.SyntaxError) syntax error at or near "%"
+LINE 3:                             SELECT %(query_embedding)s::vect...
+                                           ^
+
+[SQL: 
+                        WITH query_embedding AS (
+                            SELECT %%(query_embedding)s::vector AS vec
+                        )
+                        SELECT
+                            content,
+                            meta_data,
+                            1 - (embedding::vector <-> query_embedding.vec) as similarity
+                        FROM memories, query_embedding
+                        WHERE channel_id = %%(channel_id)s
+                        AND (meta_data->>'importance_score')::float >= %%(min_importance)s
+                        ORDER BY embedding::vector <-> query_embedding.vec
+                        LIMIT %%(limit)s
+                    ]
+(Background on this error at: https://sqlalche.me/e/20/f405)
+[2025-01-06 19:40:20] [INFO] Starting PostgreSQL Database Setup...
+[2025-01-06 19:40:21] [INFO] Checking database status...
+[2025-01-06 19:40:21] [INFO] Database is up to date, skipping migrations
+[2025-01-06 19:40:25] [ERROR] Session error: (psycopg2.errors.SyntaxError) syntax error at or near "%"
+LINE 3:                             SELECT %(query_embedding)s::vect...
+                                           ^
+
+[SQL: 
+                        WITH query_embedding AS (
+                            SELECT %%(query_embedding)s::vector AS vec
+                        )
+                        SELECT
+                            content,
+                            meta_data,
+                            1 - (embedding::vector <-> query_embedding.vec) as similarity
+                        FROM memories, query_embedding
+                        WHERE channel_id = %%(channel_id)s
+                        AND (meta_data->>'importance_score')::float >= %%(min_importance)s
+                        ORDER BY embedding::vector <-> query_embedding.vec
+                        LIMIT %%(limit)s
+                    ]
+(Background on this error at: https://sqlalche.me/e/20/f405)
+[2025-01-06 19:50:57] [INFO] Starting PostgreSQL Database Setup...
+[2025-01-06 19:50:58] [INFO] Checking database status...
+[2025-01-06 19:50:58] [INFO] Database is up to date, skipping migrations
+[2025-01-06 19:51:06] [ERROR] Session error: (psycopg2.errors.SyntaxError) syntax error at or near ":"
+LINE 5:                         1 - (embedding <-> :query_embedding:...
+                                                   ^
+
+[SQL: 
+                    SELECT
+                        content,
+                        meta_data,
+                        1 - (embedding <-> :query_embedding::vector) as similarity
+                    FROM memories
+                    WHERE channel_id = %(channel_id)s
+                    AND (meta_data->>'importance_score')::float >= %(min_importance)s
+                    ORDER BY embedding <-> :query_embedding::vector
+                    LIMIT %(limit)s
+                    ]
+[parameters: {'channel_id': '1319009340937601075', 'min_importance': 0.6, 'limit': 3}]
+(Background on this error at: https://sqlalche.me/e/20/f405)
+[2025-01-06 19:52:22] [INFO] Starting PostgreSQL Database Setup...
+[2025-01-06 19:52:23] [INFO] Checking database status...
+[2025-01-06 19:52:23] [INFO] Database is up to date, skipping migrations
+[2025-01-06 19:52:29] [ERROR] Session error: (psycopg2.errors.UndefinedFunction) operator does not exist: vector <-> numeric[]
+LINE 5:                         1 - (embedding <-> ARRAY[0.026626587...
+                                               ^
+HINT:  No operator matches the given name and argument types. You might need to add explicit type casts.
+
+[SQL: 
+                    SELECT
+                        content,
+                        meta_data,
+                        1 - (embedding <-> %(query_embedding)s) as similarity
+                    FROM memories
+                    WHERE channel_id = %(channel_id)s
+                    AND (meta_data->>'importance_score')::float >= %(min_importance)s
+                    ORDER BY embedding <-> %(query_embedding)s
+                    LIMIT %(limit)s
+                    ]
+[parameters: {'query_embedding': [0.026626587, 0.02418518, -0.030532837, -0.035980225, 0.041992188, -0.028747559, 0.030227661, -0.034332275, 0.0028457642, 0.05529785, -0.029525757, 0. ... (13437 characters truncated) ... , -0.010314941, 0.0069847107, 0.021377563, -0.026733398, 0.02255249, -0.030151367, -0.021575928, -0.03527832, -0.010871887, 0.019241333, -0.018798828], 'channel_id': '1319009340937601075', 'min_importance': 0.6, 'limit': 3}]
+(Background on this error at: https://sqlalche.me/e/20/f405)
+[2025-01-06 19:53:02] [INFO] Starting PostgreSQL Database Setup...
+[2025-01-06 19:53:04] [INFO] Checking database status...
+[2025-01-06 19:53:04] [INFO] Database is up to date, skipping migrations
+[2025-01-06 19:53:11] [ERROR] Session error: (psycopg2.errors.SyntaxError) syntax error at or near ":"
+LINE 5:                         1 - (embedding <-> (:query_embedding...
+                                                    ^
+
+[SQL: 
+                    SELECT
+                        content,
+                        meta_data,
+                        1 - (embedding <-> (:query_embedding::vector)) as similarity
+                    FROM memories
+                    WHERE channel_id = %(channel_id)s
+                    AND (meta_data->>'importance_score')::float >= %(min_importance)s
+                    ORDER BY embedding <-> (:query_embedding::vector)
+                    LIMIT %(limit)s
+                    ]
+[parameters: {'channel_id': '1319009340937601075', 'min_importance': 0.6, 'limit': 3}]
+(Background on this error at: https://sqlalche.me/e/20/f405)
+[2025-01-06 19:55:01] [INFO] Starting PostgreSQL Database Setup...
+[2025-01-06 19:55:02] [INFO] Checking database status...
+[2025-01-06 19:55:02] [INFO] Database is up to date, skipping migrations
+[2025-01-06 19:55:06] [ERROR] Session error: (psycopg2.errors.SyntaxError) syntax error at or near "%"
+LINE 5:                         1 - (embedding <-> (%(query_embeddin...
+                                                    ^
+
+[SQL: 
+                    SELECT
+                        content,
+                        meta_data,
+                        1 - (embedding <-> (%%(query_embedding)s::vector)) as similarity
+                    FROM memories
+                    WHERE channel_id = %%(channel_id)s
+                    AND (meta_data->>'importance_score')::float >= %%(min_importance)s
+                    ORDER BY embedding <-> (%%(query_embedding)s::vector)
+                    LIMIT %%(limit)s
+                    ]
+(Background on this error at: https://sqlalche.me/e/20/f405)
+[2025-01-06 19:56:29] [INFO] Starting PostgreSQL Database Setup...
+[2025-01-06 19:56:31] [INFO] Checking database status...
+[2025-01-06 19:56:31] [INFO] Database is up to date, skipping migrations
+[2025-01-06 19:56:37] [ERROR] Session error: (psycopg2.errors.SyntaxError) syntax error at or near ":"
+LINE 5:                         1 - (embedding <-> :query_embedding:...
+                                                   ^
+
+[SQL: 
+                    SELECT
+                        content,
+                        meta_data,
+                        1 - (embedding <-> :query_embedding::vector) as similarity
+                    FROM memories
+                    WHERE channel_id = %(channel_id)s
+                    AND (meta_data->>'importance_score')::float >= %(min_importance)s
+                    ORDER BY embedding <-> :query_embedding::vector
+                    LIMIT %(limit)s
+                    ]
+[parameters: {'channel_id': '1319009340937601075', 'min_importance': 0.6, 'limit': 3}]
+(Background on this error at: https://sqlalche.me/e/20/f405)
+[2025-01-06 19:57:30] [INFO] Starting PostgreSQL Database Setup...
+[2025-01-06 19:57:31] [INFO] Checking database status...
+[2025-01-06 19:57:31] [INFO] Database is up to date, skipping migrations
+[2025-01-06 19:58:50] [ERROR] Session error: (psycopg2.errors.SyntaxError) syntax error at or near "%"
+LINE 5:                         1 - (embedding <-> %(query_embedding...
+                                                   ^
+
+[SQL: 
+                    SELECT
+                        content,
+                        meta_data,
+                        1 - (embedding <-> %%(query_embedding)s::vector) as similarity
+                    FROM memories
+                    WHERE channel_id = %%(channel_id)s
+                    AND (meta_data->>'importance_score')::float >= %%(min_importance)s
+                    ORDER BY embedding <-> %%(query_embedding)s::vector
+                    LIMIT %%(limit)s
+                    ]
+(Background on this error at: https://sqlalche.me/e/20/f405)
+[2025-01-06 20:00:57] [INFO] Starting PostgreSQL Database Setup...
+[2025-01-06 20:00:58] [INFO] Checking database status...
+[2025-01-06 20:00:58] [INFO] Database is up to date, skipping migrations
+[2025-01-06 20:01:01] [ERROR] Session error: (psycopg2.errors.SyntaxError) syntax error at or near ":"
+LINE 5:                         1 - (embedding <-> :query_embedding:...
+                                                   ^
+
+[SQL: 
+                    SELECT
+                        content,
+                        meta_data,
+                        1 - (embedding <-> :query_embedding::vector) as similarity
+                    FROM memories
+                    WHERE channel_id = %(channel_id)s
+                    AND (meta_data->>'importance_score')::float >= %(min_importance)s
+                    ORDER BY embedding <-> :query_embedding::vector
+                    LIMIT %(limit)s
+                    ]
+[parameters: {'channel_id': '1319009340937601075', 'min_importance': 0.6, 'limit': 3}]
+(Background on this error at: https://sqlalche.me/e/20/f405)
+[2025-01-06 20:01:50] [INFO] Starting PostgreSQL Database Setup...
+[2025-01-06 20:01:51] [INFO] Checking database status...
+[2025-01-06 20:01:52] [INFO] Database is up to date, skipping migrations
+[2025-01-06 20:01:55] [ERROR] Session error: (psycopg2.ProgrammingError) can't adapt type 'Function'
+[SQL: 
+                    SELECT
+                        content,
+                        metadata,
+                        1 - (embedding <-> %(query_embedding)s) as similarity
+                    FROM memories
+                    WHERE channel_id = %(channel_id)s
+                    AND (metadata->>'importance_score')::float >= %(min_importance)s
+                    ORDER BY embedding <-> %(query_embedding)s
+                    LIMIT %(limit)s
+                    ]
+[parameters: {'query_embedding': <sqlalchemy.sql.functions.Function at 0x7f76ea50a830; to_vector>, 'channel_id': '1319009340937601075', 'min_importance': 0.6, 'limit': 3}]
+(Background on this error at: https://sqlalche.me/e/20/f405)
+[2025-01-07 00:02:53] [INFO] Starting PostgreSQL Database Setup...
+[2025-01-07 00:02:54] [INFO] Checking database status...
+[2025-01-07 00:02:54] [INFO] Database is up to date, skipping migrations
+[2025-01-07 00:02:59] [ERROR] Session error: (psycopg2.errors.SyntaxError) syntax error at or near ":"
+LINE 5:                         1 - (embedding <-> :query_embedding:...
+                                                   ^
+
+[SQL: 
+                    SELECT
+                        content,
+                        metadata,
+                        1 - (embedding <-> :query_embedding::vector) as similarity
+                    FROM memories
+                    WHERE channel_id = %(channel_id)s
+                    AND (metadata->>'importance_score')::float >= %(min_importance)s
+                    ORDER BY embedding <-> :query_embedding::vector
+                    LIMIT %(limit)s
+                    ]
+[parameters: {'channel_id': '1319009340937601075', 'min_importance': 0.6, 'limit': 3}]
+(Background on this error at: https://sqlalche.me/e/20/f405)
+[2025-01-07 00:03:33] [INFO] Starting PostgreSQL Database Setup...
+[2025-01-07 00:03:34] [INFO] Checking database status...
+[2025-01-07 00:03:35] [INFO] Database is up to date, skipping migrations
+[2025-01-07 00:03:40] [ERROR] Session error: (psycopg2.errors.SyntaxError) syntax error at or near "%"
+LINE 5:                         1 - (embedding <-> %(query_embedding...
+                                                   ^
+
+[SQL: 
+                    SELECT
+                        content,
+                        metadata,
+                        1 - (embedding <-> %%(query_embedding)s::vector) as similarity
+                    FROM memories
+                    WHERE channel_id = %%(channel_id)s
+                    AND (metadata->>'importance_score')::float >= %%(min_importance)s
+                    ORDER BY embedding <-> %%(query_embedding)s::vector
+                    LIMIT %%(limit)s
+                    ]
+(Background on this error at: https://sqlalche.me/e/20/f405)
+[2025-01-07 00:04:23] [INFO] Starting PostgreSQL Database Setup...
+[2025-01-07 00:04:24] [INFO] Checking database status...
+[2025-01-07 00:04:24] [INFO] Database is up to date, skipping migrations
+[2025-01-07 00:04:29] [ERROR] Session error: (psycopg2.errors.SyntaxError) syntax error at or near ":"
+LINE 5:                         1 - (embedding <-> :query_embedding:...
+                                                   ^
+
+[SQL: 
+                    SELECT
+                        content,
+                        metadata,
+                        1 - (embedding <-> :query_embedding::vector) as similarity
+                    FROM memories
+                    WHERE channel_id = %(channel_id)s
+                    AND (metadata->>'importance_score')::float >= %(min_importance)s
+                    ORDER BY embedding <-> :query_embedding::vector
+                    LIMIT %(limit)s
+                    ]
+[parameters: {'channel_id': '1319009340937601075', 'min_importance': 0.6, 'limit': 3}]
+(Background on this error at: https://sqlalche.me/e/20/f405)
+[2025-01-07 00:07:09] [INFO] Starting PostgreSQL Database Setup...
+[2025-01-07 00:07:10] [INFO] Checking database status...
+[2025-01-07 00:07:11] [INFO] Database is up to date, skipping migrations
+[2025-01-07 00:07:17] [ERROR] Session error: (psycopg2.errors.SyntaxError) syntax error at or near "%"
+LINE 5:                             1 - (embedding <-> %(query_embed...
+                                                       ^
+
+[SQL: 
+                        SELECT
+                            content,
+                            metadata,
+                            1 - (embedding <-> %%(query_embedding)s::vector) as similarity
+                        FROM memories
+                        WHERE channel_id = %%(channel_id)s
+                        AND (metadata->>'importance_score')::float >= %%(min_importance)s
+                        ORDER BY embedding <-> %%(query_embedding)s::vector
+                        LIMIT %%(limit)s
+                        ]
+(Background on this error at: https://sqlalche.me/e/20/f405)
+[2025-01-07 00:08:20] [INFO] Starting PostgreSQL Database Setup...
+[2025-01-07 00:08:21] [INFO] Checking database status...
+[2025-01-07 00:08:22] [INFO] Database is up to date, skipping migrations
+[2025-01-07 00:08:26] [ERROR] Session error: This text() construct doesn't define a bound parameter named 'query_embedding'
+[2025-01-07 00:12:50] [INFO] Starting PostgreSQL Database Setup...
+[2025-01-07 00:12:52] [INFO] Checking database status...
+[2025-01-07 00:12:52] [INFO] Database is up to date, skipping migrations
+[2025-01-07 00:12:56] [ERROR] Session error: (psycopg2.errors.SyntaxError) syntax error at or near ":"
+LINE 5:                         1 - (embedding <-> :embedding::vecto...
+                                                   ^
+
+[SQL: 
+                    SELECT
+                        content,
+                        metadata,
+                        1 - (embedding <-> :embedding::vector) as similarity
+                    FROM memories
+                    WHERE channel_id = %(channel_id)s
+                    AND (metadata->>'importance_score')::float >= %(importance)s
+                    ORDER BY embedding <-> :embedding::vector
+                    LIMIT %(limit_val)s
+                ]
+[parameters: {'channel_id': '1319009340937601075', 'importance': 0.6, 'limit_val': 3}]
+(Background on this error at: https://sqlalche.me/e/20/f405)
+[2025-01-07 14:43:39] [INFO] Starting PostgreSQL Database Setup...
+[2025-01-07 14:43:40] [INFO] Checking database status...
+[2025-01-07 14:43:40] [INFO] Database is up to date, skipping migrations
+[2025-01-07 14:43:45] [ERROR] Session error: (psycopg2.errors.UndefinedColumn) column "metadata" does not exist
+LINE 4:                         metadata,
+                                ^
+HINT:  Perhaps you meant to reference the column "memories.meta_data".
+
+[SQL: 
+                    SELECT
+                        content,
+                        metadata,
+                        1 - (embedding <-> %(embedding)s) as similarity
+                    FROM memories
+                    WHERE channel_id = %(channel_id)s
+                    AND (metadata->>'importance_score')::float >= %(importance)s
+                    ORDER BY embedding <-> %(embedding)s
+                    LIMIT %(limit_val)s
+                ]
+[parameters: {'embedding': '[-0.0018434525,0.01777649,-0.039978027,-0.0637207,0.011817932,-0.016296387,-0.028198242,0.0024356842,0.0006313324,0.05230713,-0.024627686,-0.02742004 ... (12457 characters truncated) ... 03993988,-0.040985107,0.021652222,-0.028961182,-0.013160706,-0.023269653,-0.018310547,-0.05078125,-0.03982544,-0.0020370483,-0.006011963,0.020736694]', 'channel_id': '1319009340937601075', 'importance': 0.6, 'limit_val': 3}]
+(Background on this error at: https://sqlalche.me/e/20/f405)
+[2025-01-07 14:44:32] [INFO] Starting PostgreSQL Database Setup...
+[2025-01-07 14:44:34] [INFO] Checking database status...
+[2025-01-07 14:44:34] [INFO] Database is up to date, skipping migrations
