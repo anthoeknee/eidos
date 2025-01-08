@@ -8,8 +8,8 @@ from google.genai import types
 import base64
 import cohere
 from discord import Attachment
-import asyncio
 import aiohttp
+from groq import AsyncGroq
 
 
 class GoogleAIProvider:
@@ -245,3 +245,74 @@ class CohereAIProvider:
         except Exception as e:
             logger.error(f"Error generating embeddings: {str(e)}")
             raise ValueError(f"Error generating embeddings: {str(e)}")
+
+
+class GroqAIProvider:
+    def __init__(self, api_key: str):
+        self.client = AsyncGroq(api_key=api_key)
+        self.text_model_id = "llama3-70b-8192"
+        self.image_model_id = "llama3-70b-8192"
+
+    async def generate(
+        self,
+        prompt: Optional[str] = None,
+        files: Optional[List[Union[str, Path, discord.Attachment]]] = None,
+        system_prompt: Optional[str] = None,
+        temperature: float = 0.5,
+        max_tokens: int = 1024,
+        top_p: int = 1,
+        stream: bool = False,
+        stop: Optional[List[str]] = None,
+    ) -> Optional[str]:
+        """Unified method to generate content with optional file inputs from paths or Discord attachments."""
+        messages = []
+        model_id = self.text_model_id  # Default to text model
+
+        if system_prompt:
+            messages.append({"role": "system", "content": system_prompt})
+
+        if files:
+            for file in files:
+                if isinstance(file, str):
+                    messages.append(
+                        {"role": "user", "content": [{"type": "text", "text": file}]}
+                    )
+                elif isinstance(file, discord.Attachment):
+                    model_id = (
+                        self.image_model_id
+                    )  # Switch to image model if attachment is present
+                    messages.append(
+                        {
+                            "role": "user",
+                            "content": [
+                                {"type": "text", "text": "What's in this image?"},
+                                {"type": "image_url", "image_url": {"url": file.url}},
+                            ],
+                        }
+                    )
+                elif isinstance(file, Path):
+                    # Handle regular Path object
+                    # TODO: Add support for local file paths
+                    raise ValueError(f"Local file paths are not supported yet: {file}")
+                else:
+                    raise ValueError(f"Unsupported file type: {type(file)}")
+
+        if prompt:
+            messages.append(
+                {"role": "user", "content": [{"type": "text", "text": prompt}]}
+            )
+
+        try:
+            chat_completion = await self.client.chat.completions.create(
+                model=model_id,
+                messages=messages,
+                temperature=temperature,
+                max_tokens=max_tokens,
+                top_p=top_p,
+                stream=stream,
+                stop=stop,
+            )
+            return chat_completion.choices[0].message.content
+        except Exception as e:
+            logger.error(f"Error calling Groq API: {e}")
+            return None

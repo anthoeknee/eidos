@@ -2,6 +2,7 @@ from typing import Optional
 from src.services.ai.providers import GoogleAIProvider, CohereAIProvider
 from src.services.ai.memory.long_term import LongTermMemory
 from src.services.ai.memory.short_term import ShortTermMemory
+from src.services.ai.memory.nlp import NLP
 from src.config import get_config
 from src.utils.logger import logger
 
@@ -13,6 +14,7 @@ class AIService:
         self.cohere: Optional[CohereAIProvider] = None
         self.long_term_memory: Optional[LongTermMemory] = None
         self.short_term_memory: Optional[ShortTermMemory] = None
+        self.nlp: Optional[NLP] = None
         self.config = get_config()
 
     async def initialize(self):
@@ -22,6 +24,9 @@ class AIService:
 
         if self.config.COHERE_API_KEY:
             self.cohere = CohereAIProvider(api_key=self.config.COHERE_API_KEY)
+
+        if self.config.GROQ_API_KEY:
+            self.nlp = NLP()
 
 
 async def setup(bot):
@@ -50,6 +55,8 @@ async def setup(bot):
         if ai_service.cohere:
             services_to_register["ai.cohere"] = ai_service.cohere
             services_to_register["ai.embeddings"] = ai_service.cohere
+        if ai_service.nlp:
+            services_to_register["ai.nlp"] = ai_service.nlp
 
         for name, service in services_to_register.items():
             bot.services[name] = service

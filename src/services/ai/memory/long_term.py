@@ -1,4 +1,4 @@
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any
 from datetime import datetime, timedelta
 import logging
 from sqlalchemy import text
@@ -48,12 +48,10 @@ class LongTermMemory:
         """Add a message to the memory buffer."""
         if channel_id not in self.memory_buffer:
             self.memory_buffer[channel_id] = []
-            # Initialize last_processed time when creating a new buffer
             self.last_processed[channel_id] = datetime.utcnow()
 
         self.memory_buffer[channel_id].append(content)
 
-        # Only check for processing if we have enough messages
         if len(self.memory_buffer[channel_id]) >= self.min_messages_for_processing:
             await self._check_process_memory(channel_id)
 
@@ -64,7 +62,6 @@ class LongTermMemory:
             last_processed = self.last_processed.get(channel_id)
             buffer_messages = self.memory_buffer.get(channel_id, [])
 
-            # Only process if we have enough messages AND enough time has passed
             should_process = len(
                 buffer_messages
             ) >= self.min_messages_for_processing and (
@@ -96,12 +93,13 @@ class LongTermMemory:
 
             importance_score = await self._analyze_importance(memory_text)
             memory_type = "important" if importance_score > 0.8 else "conversation"
+            summary = await self.nlp.summarize_text(memory_text)
 
             embedding_array = f"{{{','.join(str(x) for x in embeddings)}}}"
 
             memory = Memory(
                 channel_id=channel_id,
-                content=memory_text,
+                content=summary if summary else memory_text,
                 embedding=embeddings,
                 memory_type=memory_type,
                 metadata={
@@ -112,7 +110,6 @@ class LongTermMemory:
                 },
             )
 
-            # Updated column name in the INSERT statement
             with self.db.session() as session:
                 session.execute(
                     text("""
@@ -124,9 +121,7 @@ class LongTermMemory:
                         "content": memory.content,
                         "embedding": embedding_array,
                         "memory_type": memory.memory_type,
-                        "meta_data": json.dumps(
-                            memory.metadata
-                        ),  # Note: we pass as metadata but column is meta_data
+                        "meta_data": json.dumps(memory.metadata),
                     },
                 )
                 session.commit()
@@ -212,7 +207,7 @@ class LongTermMemory:
             return await self.nlp.analyze_importance(memory_text)
         except Exception as e:
             logger.error(f"Error analyzing importance: {e}")
-            return 0.0  # Default to low importance on error
+            return 0.0
 
     async def _extract_context_tags(self, memory_text: str) -> List[str]:
         """Extract context tags from the memory text using the NLP service."""
@@ -228,9 +223,7 @@ class LongTermMemory:
         """Store the extracted context tags in the database."""
         try:
             with self.db.session() as session:
-                # Use the new get_or_create_tags function
                 get_or_create_tags(session, tags)
-                # No need to commit here, as get_or_create_tags handles it
 
         except Exception as e:
             logger.error(f"Error storing context tags in database: {e}")
@@ -245,7 +238,6 @@ class LongTermMemory:
     ) -> bool:
         """Store an image-related memory."""
         try:
-            # Generate embedding for the image description
             embedding = await self.embeddings.get_embedding(
                 content=description, content_type="text"
             )
@@ -254,18 +246,17 @@ class LongTermMemory:
                 logger.error("Failed to generate embedding for image memory")
                 return False
 
-            # Format embedding array for PostgreSQL
+            importance_score = await self.nlp.analyze_importance(description)
+
             embedding_array = f"{{{','.join(str(x) for x in embedding)}}}"
 
-            # Prepare metadata
             full_metadata = {
                 "image_url": image_url,
                 "timestamp": datetime.utcnow().isoformat(),
-                "importance_score": 0.7,  # Default importance for images
+                "importance_score": importance_score,
                 **(metadata or {}),
             }
 
-            # Store in database
             with self.db.session() as session:
                 session.execute(
                     text("""

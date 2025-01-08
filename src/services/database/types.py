@@ -1,5 +1,4 @@
 from sqlalchemy.types import TypeDecorator, Text
-from sqlalchemy.dialects.postgresql import ARRAY as PG_ARRAY
 import numpy as np
 
 

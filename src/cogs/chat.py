@@ -2,6 +2,7 @@ import discord
 from discord.ext import commands
 import asyncio
 from src.utils.logger import logger
+import uuid
 
 
 class ChatCog(commands.Cog):
@@ -14,13 +15,11 @@ class ChatCog(commands.Cog):
     async def cog_load(self):
         logger.info("Loading ChatCog...")
         try:
-            # Get the database service
             db_service = await self.bot.get_service("database")
             if not db_service:
                 logger.error("Database service not available")
                 raise RuntimeError("Database service not initialized")
 
-            # Get the long-term memory service
             self._long_term_memory = await self.bot.get_service("ai.long_term_memory")
             if not self._long_term_memory:
                 logger.error("Long-term memory service returned None")
@@ -28,7 +27,6 @@ class ChatCog(commands.Cog):
 
             logger.info("Successfully loaded required services")
 
-            # Add the memory task listener
             self.bot.add_listener(self.start_memory_task, "on_ready")
             logger.info("Memory task will start when bot is ready")
 
@@ -119,6 +117,7 @@ class ChatCog(commands.Cog):
 
             channel_id = str(message.channel.id)
             messages = await short_term_memory.get_messages(channel_id)
+            conversation_meta = await short_term_memory.get_metadata(channel_id)
 
             relevant_memories = []
             try:
@@ -140,11 +139,15 @@ class ChatCog(commands.Cog):
                     ]
                 )
 
-            conversation_meta = await short_term_memory.get_metadata(channel_id)
-
-            system_prompt = """You are a helpful Discord bot assistant with both short-term and long-term memory.
+            system_prompt = f"""You are a helpful Discord bot assistant with both short-term and long-term memory.
             Use the provided conversation context and relevant memories to give informed, contextual responses.
-            Keep responses natural and conversational while being helpful and informative."""
+            Keep responses natural and conversational while being helpful and informative.
+
+            Conversation Metadata:
+            - Total Messages: {conversation_meta.get('total_messages', 0)}
+            - Last Message Time: {conversation_meta.get('last_message_time', 'N/A')}
+            - Participants: {', '.join(conversation_meta.get('participants', []))}
+            """
 
             conversation = "\n".join(
                 [
@@ -167,6 +170,7 @@ class ChatCog(commands.Cog):
                         "author": self.bot.user,
                         "channel": message.channel,
                         "created_at": discord.utils.utcnow(),
+                        "id": str(uuid.uuid4()),  # Generate a unique ID
                     },
                 )
 
