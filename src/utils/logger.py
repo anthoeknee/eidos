@@ -1,7 +1,7 @@
-from colorama import Fore, Style, init
-from datetime import datetime
 import logging
 import os
+from colorama import Fore, Style, init
+from datetime import datetime
 
 # Initialize colorama for cross-platform colored output
 init(autoreset=True)
@@ -45,7 +45,7 @@ class Logger:
     def __init__(self):
         self.log_directory = "logs"
         self.log_file = "bot.log"
-        self.logger = logging.getLogger("discord_bot")
+        self.logger = logging.getLogger()  # Use the root logger
         self.setup_logger()
 
     def setup_logger(self):
@@ -111,3 +111,31 @@ info = logger.info
 warning = logger.warning
 error = logger.error
 critical = logger.critical
+
+# Get the root logger and configure it
+root_logger = logging.getLogger()
+for handler in root_logger.handlers[:]:
+    root_logger.removeHandler(handler)
+root_logger.addHandler(logging.StreamHandler())
+root_logger.handlers[0].setFormatter(
+    CustomFormatter(style="{", datefmt="%Y-%m-%d %H:%M:%S")
+)
+root_logger.setLevel(logging.DEBUG)
+
+# Get the discord logger and remove all handlers
+discord_logger = logging.getLogger("discord")
+for handler in discord_logger.handlers[:]:
+    discord_logger.removeHandler(handler)
+discord_logger.setLevel(logging.INFO)
+
+# Get the httpcore logger and remove all handlers
+httpcore_logger = logging.getLogger("httpcore")
+for handler in httpcore_logger.handlers[:]:
+    httpcore_logger.removeHandler(handler)
+httpcore_logger.setLevel(logging.INFO)
+
+# Get the google.generativeai logger and remove all handlers
+genai_logger = logging.getLogger("google.generativeai")
+for handler in genai_logger.handlers[:]:
+    genai_logger.removeHandler(handler)
+genai_logger.setLevel(logging.INFO)
