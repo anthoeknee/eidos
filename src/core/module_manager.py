@@ -172,3 +172,30 @@ class ModuleManager:
     def list_modules(self) -> list[str]:
         """Return list of loaded module names."""
         return list(self.loaded_modules)
+
+    async def initialize_bot(self):
+        """Initialize the bot after all modules are loaded."""
+        await self._register_event_handlers()
+        await self._register_command_handlers()
+
+    async def _register_event_handlers(self):
+        """Register event handlers from loaded modules."""
+        event_handlers = self.get_plugins("event_handler")
+        for handler in event_handlers:
+            if hasattr(handler, "register_events"):
+                await handler.register_events(self.bot)
+            else:
+                logger.warning(
+                    f"Event handler {handler} has no register_events method."
+                )
+
+    async def _register_command_handlers(self):
+        """Register command handlers from loaded modules."""
+        command_handlers = self.get_plugins("command_handler")
+        for handler in command_handlers:
+            if hasattr(handler, "register_commands"):
+                await handler.register_commands(self.bot)
+            else:
+                logger.warning(
+                    f"Command handler {handler} has no register_commands method."
+                )

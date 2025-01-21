@@ -20,7 +20,9 @@ async def main():
         module_manager.set_bot(bot)
         bot.module_manager = module_manager
 
+        # Load modules and initialize the bot
         await module_manager.load_modules()
+        await module_manager.initialize_bot()
 
         logger.info("Loaded modules: %s", module_manager.list_modules())
 

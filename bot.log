@@ -1,0 +1,16 @@
+2025-01-21 01:57:23 - INFO - Bot created and configured.
+2025-01-21 01:57:23 - WARNING - Module bot has no metadata
+2025-01-21 01:57:23 - WARNING - Module client has no metadata
+2025-01-21 01:57:23 - WARNING - Module config has no metadata
+2025-01-21 01:57:23 - WARNING - Module module_manager has no metadata
+2025-01-21 01:57:24 - WARNING - Module service has no metadata
+2025-01-21 01:57:24 - WARNING - Module surrealdb has no metadata
+2025-01-21 01:57:24 - WARNING - Module logger has no metadata
+2025-01-21 01:57:24 - INFO - Loaded 0 unique modules
+2025-01-21 01:57:24 - INFO - Loaded modules: []
+2025-01-21 01:57:24 - INFO - Loaded modules: []
+2025-01-21 01:57:24 - INFO - Slash commands synced.
+2025-01-21 01:57:27 - INFO - Logged in as Eidos#6714 (ID: 1319007682476118059)
+2025-01-21 01:57:39 - INFO - Closing bot.
+2025-01-21 01:57:39 - INFO - Bot closed.
+2025-01-21 01:57:39 - INFO - Bot shutdown initiated by user
